@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slice Fight — Turn-Based</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="game-container">
+    <header class="game-header">
+      <div class="player-info player1-info">
+        <span class="player-name">P1</span>
+        <div class="health-bar"><div class="health-fill" id="p1-health"></div></div>
+        <span class="health-text" id="p1-health-text">100</span>
+      </div>
+      <div class="turn-indicator" id="turn-indicator">P1's Turn</div>
+      <div class="player-info player2-info">
+        <span class="player-name">P2</span>
+        <div class="health-bar"><div class="health-fill" id="p2-health"></div></div>
+        <span class="health-text" id="p2-health-text">100</span>
+      </div>
+    </header>
+
+    <main class="arena">
+      <div class="grid" id="grid">
+        <!-- 5 cols x 3 rows, filled by JS -->
+      </div>
+      <div class="avatar avatar-p1" id="avatar-p1">P1</div>
+      <div class="avatar avatar-p2" id="avatar-p2">P2</div>
+    </main>
+
+    <section class="options-panel">
+      <h2 class="options-title">Options</h2>
+      <div class="options-content" id="options-content">
+        <p class="options-hint" id="options-hint">Move or attack.</p>
+      </div>
+    </section>
+
+    <section class="frame-data-panel">
+      <h2 class="frame-data-title">Your plan — 30 frames (drag actions here, then Go)</h2>
+      <div class="frame-plan-row">
+        <span class="frame-player-badge p1-badge">P1</span>
+        <div class="frame-plan-bar-wrap" id="frame-plan-wrap">
+          <div class="frame-plan-bar" id="frame-plan-bar">
+            <!-- 30 frame slots filled by JS -->
+          </div>
+          <div class="frame-bar-cursor frame-plan-cursor" id="frame-plan-cursor" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="frame-data-rows frame-execution-rows">
+        <div class="frame-row frame-row-p1">
+          <span class="frame-player-badge p1-badge">P1</span>
+          <span class="frame-action-label" id="frame-label-p1">—</span>
+          <div class="frame-bar-wrap">
+            <div class="frame-bar" id="frame-bar-p1" aria-hidden="true"></div>
+            <div class="frame-bar-cursor" id="frame-cursor-p1" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="frame-row frame-row-p2">
+          <span class="frame-player-badge p2-badge">P2</span>
+          <span class="frame-action-label" id="frame-label-p2">—</span>
+          <div class="frame-bar-wrap">
+            <div class="frame-bar" id="frame-bar-p2" aria-hidden="true"></div>
+            <div class="frame-bar-cursor" id="frame-cursor-p2" aria-hidden="true"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="controller">
+      <h2 class="controller-title">Drag actions to the 30-frame bar above, then press Go</h2>
+      <div class="attacks-drag">
+        <span class="drag-label">Actions (drag to bar):</span>
+        <div class="direction-buttons">
+          <button type="button" class="dir-btn dir-up draggable" id="btn-jump" draggable="true" data-action="jump" title="5 active frames">▲ Jump (5f)</button>
+          <div class="dir-mid">
+            <button type="button" class="dir-btn dir-left draggable" id="btn-left" draggable="true" data-action="left">◀ (1f)</button>
+            <span class="dir-center"></span>
+            <button type="button" class="dir-btn dir-right draggable" id="btn-right" draggable="true" data-action="right">▶ (1f)</button>
+          </div>
+          <button type="button" class="dir-btn dir-down draggable" id="btn-down" draggable="true" data-action="down">▼ (1f)</button>
+        </div>
+        <button type="button" class="attack-btn light draggable" id="btn-light" draggable="true" data-action="light">Light (16f)</button>
+        <button type="button" class="attack-btn medium" id="btn-medium" disabled title="Coming soon">Medium</button>
+        <button type="button" class="attack-btn heavy" id="btn-heavy" disabled title="Coming soon">Heavy</button>
+      </div>
+      <div class="go-area">
+        <button type="button" class="go-btn" id="btn-go">Go</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
