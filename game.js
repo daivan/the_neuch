@@ -45,9 +45,12 @@
     btnMedium: document.getElementById('btn-medium'),
     btnHeavy: document.getElementById('btn-heavy'),
     btnGo: document.getElementById('btn-go'),
-    framePlanBar: document.getElementById('frame-plan-bar'),
-    framePlanWrap: document.getElementById('frame-plan-wrap'),
-    framePlanCursor: document.getElementById('frame-plan-cursor'),
+    framePlanBarP1: document.getElementById('frame-plan-bar-p1'),
+    framePlanWrapP1: document.getElementById('frame-plan-wrap-p1'),
+    framePlanCursorP1: document.getElementById('frame-plan-cursor-p1'),
+    framePlanBarP2: document.getElementById('frame-plan-bar-p2'),
+    framePlanWrapP2: document.getElementById('frame-plan-wrap-p2'),
+    framePlanCursorP2: document.getElementById('frame-plan-cursor-p2'),
     frameBarP1: document.getElementById('frame-bar-p1'),
     frameBarP2: document.getElementById('frame-bar-p2'),
     frameCursorP1: document.getElementById('frame-cursor-p1'),
@@ -57,7 +60,8 @@
   };
 
   /** Plan: array of { type, startFrame }. Each action occupies startFrame..startFrame+totalFrames-1. */
-  let plan = [];
+  let planP1 = [];
+  let planP2 = [];
   /** During execution: current global frame 0..PLAN_FRAMES-1 */
   let planCurrentFrame = 0;
   let planTimerId = null;
@@ -85,10 +89,12 @@
   }
 
   /** Build the 30-frame plan bar (slots) and render current plan. */
-  function buildPlanBar() {
-    elements.framePlanBar.innerHTML = '';
+  function buildPlanBar(playerNum) {
+    const barEl = playerNum === 1 ? elements.framePlanBarP1 : elements.framePlanBarP2;
+    const planArray = playerNum === 1 ? planP1 : planP2;
+    barEl.innerHTML = '';
     const slotCount = PLAN_FRAMES;
-    const filled = getPlanFilledSlots();
+    const filled = getPlanFilledSlots(planArray);
     for (let i = 0; i < slotCount; i++) {
       const slot = document.createElement('div');
       slot.className = 'frame-slot';
@@ -98,15 +104,15 @@
         slot.classList.add('filled', info.type);
         if (info.phase) slot.classList.add(info.phase);
       }
-      elements.framePlanBar.appendChild(slot);
+      barEl.appendChild(slot);
     }
   }
 
   /** Returns array of length PLAN_FRAMES: each entry is null or { type, phase: 'startup'|'active'|'recovery' }. */
-  function getPlanFilledSlots() {
+  function getPlanFilledSlots(planArray) {
     const result = Array(PLAN_FRAMES).fill(null);
     const fd = FRAME_DATA;
-    plan.forEach(function (entry) {
+    planArray.forEach(function (entry) {
       const total = getTotalFrames(entry.type);
       const start = entry.startFrame;
       const s = (fd[entry.type] && fd[entry.type].startup) || 0;
@@ -123,8 +129,8 @@
   }
 
   /** Find first contiguous block of `length` empty frames starting at or before startIndex (prefer at startIndex). */
-  function findEmptyBlock(length, startIndex) {
-    const filled = getPlanFilledSlots();
+  function findEmptyBlock(planArray, length, startIndex) {
+    const filled = getPlanFilledSlots(planArray);
     for (let start = Math.max(0, startIndex - length + 1); start <= Math.min(PLAN_FRAMES - length, startIndex); start++) {
       let ok = true;
       for (let i = 0; i < length; i++) {
@@ -135,24 +141,27 @@
     return -1;
   }
 
-  function addToPlan(actionType, atFrameIndex) {
+  function addToPlan(playerNum, actionType, atFrameIndex) {
+    const planArray = playerNum === 1 ? planP1 : planP2;
     const total = getTotalFrames(actionType);
     if (total <= 0) return false;
-    const start = findEmptyBlock(total, atFrameIndex);
+    const start = findEmptyBlock(planArray, total, atFrameIndex);
     if (start < 0) return false;
-    plan.push({ type: actionType, startFrame: start });
-    buildPlanBar();
+    planArray.push({ type: actionType, startFrame: start });
+    buildPlanBar(playerNum);
     return true;
   }
 
   function clearPlan() {
-    plan = [];
-    buildPlanBar();
+    planP1 = [];
+    planP2 = [];
+    buildPlanBar(1);
+    buildPlanBar(2);
   }
 
-  /** Get current action and phase for P1 at global plan frame (during execution). */
-  function getActionAtPlanFrame(frameIndex) {
-    const filled = getPlanFilledSlots();
+  /** Get current action and phase for a plan array at global plan frame (during execution). */
+  function getActionAtPlanFrame(planArray, frameIndex) {
+    const filled = getPlanFilledSlots(planArray);
     return filled[frameIndex] || null;
   }
 
@@ -217,55 +226,71 @@
       clearInterval(planTimerId);
       planTimerId = null;
       frameActionP1 = null;
+      frameActionP2 = null;
       clearPlan();
-      elements.framePlanCursor.classList.remove('visible');
+      elements.framePlanCursorP1.classList.remove('visible');
+      elements.framePlanCursorP2.classList.remove('visible');
       elements.btnGo.disabled = false;
       elements.optionsHint.textContent = 'Plan finished. Drag actions to the bar again and press Go.';
       updateFrameDataDisplay();
       updateUI();
       return;
     }
-    const info = getActionAtPlanFrame(planCurrentFrame);
-    if (info) {
-      const fd = FRAME_DATA[info.type];
-      const total = getTotalFrames(info.type);
-      const actionStart = (function () {
-        for (let i = 0; i < plan.length; i++) {
-          const e = plan[i];
-          const t = getTotalFrames(e.type);
-          if (planCurrentFrame >= e.startFrame && planCurrentFrame < e.startFrame + t)
-            return { start: e.startFrame, total: t, type: e.type };
+
+    function processPlayerAction(playerNum, planArray) {
+      const info = getActionAtPlanFrame(planArray, planCurrentFrame);
+      let frameAction = playerNum === 1 ? frameActionP1 : frameActionP2;
+
+      if (info) {
+        const fd = FRAME_DATA[info.type];
+        const total = getTotalFrames(info.type);
+        const actionStart = (function () {
+          for (let i = 0; i < planArray.length; i++) {
+            const e = planArray[i];
+            const t = getTotalFrames(e.type);
+            if (planCurrentFrame >= e.startFrame && planCurrentFrame < e.startFrame + t)
+              return { start: e.startFrame, total: t, type: e.type };
+          }
+          return null;
+        })();
+        if (actionStart) {
+          const localFrame = planCurrentFrame - actionStart.start;
+          if (!frameAction || frameAction.type !== actionStart.type) {
+            frameAction = {
+              type: actionStart.type,
+              startup: fd.startup,
+              active: fd.active,
+              recovery: fd.recovery,
+              totalFrames: actionStart.total,
+              currentFrame: localFrame
+            };
+          } else {
+            frameAction.currentFrame = localFrame;
+          }
+          if (['light', 'medium', 'heavy'].includes(info.type) && info.phase === 'active' && localFrame === fd.startup) {
+            doAttack(info.type, playerNum);
+          }
+          if (['left', 'right', 'down', 'jump'].includes(info.type)) {
+            applyMovement(info.type, localFrame, playerNum);
+          }
         }
-        return null;
-      })();
-      if (actionStart) {
-        const localFrame = planCurrentFrame - actionStart.start;
-        if (!frameActionP1 || frameActionP1.type !== actionStart.type) {
-          frameActionP1 = {
-            type: actionStart.type,
-            startup: fd.startup,
-            active: fd.active,
-            recovery: fd.recovery,
-            totalFrames: actionStart.total,
-            currentFrame: localFrame
-          };
-        } else {
-          frameActionP1.currentFrame = localFrame;
-        }
-        if (['light', 'medium', 'heavy'].includes(info.type) && info.phase === 'active' && localFrame === fd.startup) {
-          doAttack(info.type);
-        }
-        if (['left', 'right', 'down', 'jump'].includes(info.type)) {
-          applyMovement(info.type, localFrame);
-        }
+      } else {
+        frameAction = null;
       }
-    } else {
-      frameActionP1 = null;
+      
+      if (playerNum === 1) frameActionP1 = frameAction;
+      else frameActionP2 = frameAction;
     }
+
+    processPlayerAction(1, planP1);
+    processPlayerAction(2, planP2);
+
     updateUI();
     const pct = (planCurrentFrame / PLAN_FRAMES) * 100;
-    elements.framePlanCursor.style.left = pct + '%';
-    elements.framePlanCursor.classList.add('visible');
+    elements.framePlanCursorP1.style.left = pct + '%';
+    elements.framePlanCursorP1.classList.add('visible');
+    elements.framePlanCursorP2.style.left = pct + '%';
+    elements.framePlanCursorP2.classList.add('visible');
     updateFrameDataDisplay();
     planCurrentFrame++;
   }
@@ -298,28 +323,28 @@
     }
   }
 
-  /** Apply one frame of movement for P1 during plan execution. 1 frame = 1/5 cell; 5 frames = 1 cell. */
-  function applyMovement(type, localFrame) {
-    const p1 = state.p1;
+  /** Apply one frame of movement during plan execution. 1 frame = 1/5 cell; 5 frames = 1 cell. */
+  function applyMovement(type, localFrame, playerNum) {
+    const p = playerNum === 1 ? state.p1 : state.p2;
     if (type === 'left') {
-      if (isOnFloor(p1)) moveStep(p1, -1, 0);
+      if (isOnFloor(p)) moveStep(p, -1, 0);
     } else if (type === 'right') {
-      if (isOnFloor(p1)) moveStep(p1, 1, 0);
+      if (isOnFloor(p)) moveStep(p, 1, 0);
     } else if (type === 'down') {
-      if (p1.row < FLOOR_ROW) {
-        p1.row = FLOOR_ROW;
-        p1.stepY = 0;
+      if (p.row < FLOOR_ROW) {
+        p.row = FLOOR_ROW;
+        p.stepY = 0;
       }
     } else if (type === 'jump') {
-      if (localFrame === 0 && isOnFloor(p1) && p1.row > 0) moveStep(p1, 0, -1);
-      else if (localFrame >= 1 && localFrame <= 4) moveStep(p1, 0, -1);
-      if (localFrame === 4) { p1.row = FLOOR_ROW; p1.stepY = 0; }
+      if (localFrame === 0 && isOnFloor(p) && p.row > 0) moveStep(p, 0, -1);
+      else if (localFrame >= 1 && localFrame <= 4) moveStep(p, 0, -1);
+      if (localFrame === 4) { p.row = FLOOR_ROW; p.stepY = 0; }
     }
   }
 
   function startPlanExecution() {
-    if (plan.length === 0) {
-      elements.optionsHint.textContent = 'Drag at least one action (e.g. Light) to the bar, then press Go.';
+    if (planP1.length === 0 && planP2.length === 0) {
+      elements.optionsHint.textContent = 'Drag at least one action to a bar, then press Go.';
       return;
     }
     if (planTimerId) return;
@@ -430,7 +455,7 @@
     const p1 = state.p1;
     const p2 = state.p2;
     const dist = manhattanDist(p1, p2);
-    const filled = plan.length ? plan.length + ' action(s) in plan.' : 'No actions in plan.';
+    const filled = 'P1: ' + planP1.length + ' / P2: ' + planP2.length + ' action(s).';
     elements.optionsHint.textContent = 'Distance: ' + dist + ' steps (1 frame = 1/5 cell). ' + filled + ' Drag to bar, then Go.';
   }
 
@@ -469,9 +494,9 @@
     return true;
   }
 
-  function doAttack(type) {
-    const attacker = state.turn === 1 ? state.p1 : state.p2;
-    const defender = state.turn === 1 ? state.p2 : state.p1;
+  function doAttack(type, playerNum) {
+    const attacker = playerNum === 1 ? state.p1 : state.p2;
+    const defender = playerNum === 1 ? state.p2 : state.p1;
     const dist = manhattanDist(attacker, defender); // distance in sub-steps
 
     let mult = 1;
@@ -482,7 +507,7 @@
     const amount = Math.max(1, Math.floor(damage[type] * mult));
     defender.health = Math.max(0, defender.health - amount);
 
-    const avatar = state.turn === 1 ? elements.avatarP1 : elements.avatarP2;
+    const avatar = playerNum === 1 ? elements.avatarP1 : elements.avatarP2;
     avatar.classList.add('attacking');
     setTimeout(function () { avatar.classList.remove('attacking'); }, 300);
 
@@ -551,8 +576,7 @@
     updateUI();
   }
 
-  function getPlanBarDropIndex(e) {
-    const wrap = elements.framePlanWrap;
+  function getPlanBarDropIndex(e, wrap) {
     const rect = wrap.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const pct = Math.max(0, Math.min(1, x / rect.width));
@@ -560,10 +584,10 @@
   }
 
   function bindPlanBar() {
-    buildPlanBar();
+    buildPlanBar(1);
+    buildPlanBar(2);
     elements.btnGo.addEventListener('click', function () {
       if (state.gameOver) return;
-      state.turn = 1;
       startPlanExecution();
     });
 
@@ -581,26 +605,31 @@
       });
     });
 
-    elements.framePlanWrap.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-      elements.framePlanWrap.classList.add('drag-over');
-    });
-    elements.framePlanWrap.addEventListener('dragleave', function () {
-      elements.framePlanWrap.classList.remove('drag-over');
-    });
-    elements.framePlanWrap.addEventListener('drop', function (e) {
-      e.preventDefault();
-      elements.framePlanWrap.classList.remove('drag-over');
-      const actionType = e.dataTransfer.getData('text/plain');
-      if (!actionType || !FRAME_DATA[actionType]) return;
-      const index = getPlanBarDropIndex(e);
-      if (addToPlan(actionType, index)) {
-        elements.optionsHint.textContent = 'Added ' + actionType + ' to plan. Add more or press Go.';
-      } else {
-        elements.optionsHint.textContent = 'Not enough empty frames for ' + actionType + ' (needs ' + getTotalFrames(actionType) + ' frames).';
-      }
-    });
+    function setupDragDrop(wrap, playerNum) {
+      wrap.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        wrap.classList.add('drag-over');
+      });
+      wrap.addEventListener('dragleave', function () {
+        wrap.classList.remove('drag-over');
+      });
+      wrap.addEventListener('drop', function (e) {
+        e.preventDefault();
+        wrap.classList.remove('drag-over');
+        const actionType = e.dataTransfer.getData('text/plain');
+        if (!actionType || !FRAME_DATA[actionType]) return;
+        const index = getPlanBarDropIndex(e, wrap);
+        if (addToPlan(playerNum, actionType, index)) {
+          elements.optionsHint.textContent = 'Added ' + actionType + ' to P' + playerNum + ' plan. Add more or press Go.';
+        } else {
+          elements.optionsHint.textContent = 'Not enough empty frames for ' + actionType + ' (needs ' + getTotalFrames(actionType) + ' frames).';
+        }
+      });
+    }
+
+    setupDragDrop(elements.framePlanWrapP1, 1);
+    setupDragDrop(elements.framePlanWrapP2, 2);
   }
 
   function init() {
