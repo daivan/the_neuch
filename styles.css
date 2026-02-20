@@ -539,3 +539,40 @@ body {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.hurtbox {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #ff9900;
+  background: rgba(255, 153, 0, 0.3);
+  pointer-events: none;
+}
+
+.hitbox {
+  position: absolute;
+  top: 50%;
+  width: 30px;
+  height: 20px;
+  background: rgba(255, 0, 0, 0.5);
+  border: 2px solid red;
+  pointer-events: none;
+  display: none;
+}
+
+.avatar-p1 .hitbox {
+  left: 100%;
+  transform: translateY(-50%);
+}
+
+.avatar-p2 .hitbox {
+  right: 100%;
+  transform: translateY(-50%);
+}
+
+.avatar.attacking-light-active .hitbox {
+  display: block;
+}

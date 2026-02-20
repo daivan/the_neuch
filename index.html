@@ -1,23 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Slice Fight — Turn-Based</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="game-container">
     <header class="game-header">
       <div class="player-info player1-info">
         <span class="player-name">P1</span>
-        <div class="health-bar"><div class="health-fill" id="p1-health"></div></div>
+        <div class="health-bar">
+          <div class="health-fill" id="p1-health"></div>
+        </div>
         <span class="health-text" id="p1-health-text">100</span>
       </div>
       <div class="turn-indicator" id="turn-indicator">P1's Turn</div>
       <div class="player-info player2-info">
         <span class="player-name">P2</span>
-        <div class="health-bar"><div class="health-fill" id="p2-health"></div></div>
+        <div class="health-bar">
+          <div class="health-fill" id="p2-health"></div>
+        </div>
         <span class="health-text" id="p2-health-text">100</span>
       </div>
     </header>
@@ -26,8 +32,14 @@
       <div class="grid" id="grid">
         <!-- 5 cols x 3 rows, filled by JS -->
       </div>
-      <div class="avatar avatar-p1" id="avatar-p1">P1</div>
-      <div class="avatar avatar-p2" id="avatar-p2">P2</div>
+      <div class="avatar avatar-p1" id="avatar-p1">P1
+        <div class="hurtbox"></div>
+        <div class="hitbox"></div>
+      </div>
+      <div class="avatar avatar-p2" id="avatar-p2">P2
+        <div class="hurtbox"></div>
+        <div class="hitbox"></div>
+      </div>
     </main>
 
     <section class="options-panel">
@@ -82,15 +94,20 @@
       <div class="attacks-drag">
         <span class="drag-label">Actions (drag to bar):</span>
         <div class="direction-buttons">
-          <button type="button" class="dir-btn dir-up draggable" id="btn-jump" draggable="true" data-action="jump" title="5 active frames">▲ Jump (5f)</button>
+          <button type="button" class="dir-btn dir-up draggable" id="btn-jump" draggable="true" data-action="jump"
+            title="5 active frames">▲ Jump (5f)</button>
           <div class="dir-mid">
-            <button type="button" class="dir-btn dir-left draggable" id="btn-left" draggable="true" data-action="left">◀ (1f)</button>
+            <button type="button" class="dir-btn dir-left draggable" id="btn-left" draggable="true" data-action="left">◀
+              (1f)</button>
             <span class="dir-center"></span>
-            <button type="button" class="dir-btn dir-right draggable" id="btn-right" draggable="true" data-action="right">▶ (1f)</button>
+            <button type="button" class="dir-btn dir-right draggable" id="btn-right" draggable="true"
+              data-action="right">▶ (1f)</button>
           </div>
-          <button type="button" class="dir-btn dir-down draggable" id="btn-down" draggable="true" data-action="down">▼ (1f)</button>
+          <button type="button" class="dir-btn dir-down draggable" id="btn-down" draggable="true" data-action="down">▼
+            (1f)</button>
         </div>
-        <button type="button" class="attack-btn light draggable" id="btn-light" draggable="true" data-action="light">Light (16f)</button>
+        <button type="button" class="attack-btn light draggable" id="btn-light" draggable="true"
+          data-action="light">Light (16f)</button>
         <button type="button" class="attack-btn medium" id="btn-medium" disabled title="Coming soon">Medium</button>
         <button type="button" class="attack-btn heavy" id="btn-heavy" disabled title="Coming soon">Heavy</button>
       </div>
@@ -102,4 +119,5 @@
 
   <script src="game.js"></script>
 </body>
+
 </html>

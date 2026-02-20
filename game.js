@@ -17,14 +17,14 @@
 
   /** Frame data: startup, active, recovery per action. Directions: 1f each; jump = 5 active frames. */
   const FRAME_DATA = {
-    light:   { startup: 6,  active: 2,  recovery: 8 },
-    medium:  { startup: 10, active: 5,  recovery: 18 },
-    heavy:   { startup: 15, active: 5,  recovery: 28 },
-    move:    { startup: 0,  active: 0,  recovery: 8 },
-    left:    { startup: 1,  active: 0,  recovery: 0 },
-    right:   { startup: 1,  active: 0,  recovery: 0 },
-    down:    { startup: 1,  active: 0,  recovery: 0 },
-    jump:    { startup: 0,  active: 5,  recovery: 0 }
+    light: { startup: 6, active: 2, recovery: 8 },
+    medium: { startup: 10, active: 5, recovery: 18 },
+    heavy: { startup: 15, active: 5, recovery: 28 },
+    move: { startup: 0, active: 0, recovery: 8 },
+    left: { startup: 1, active: 0, recovery: 0 },
+    right: { startup: 1, active: 0, recovery: 0 },
+    down: { startup: 1, active: 0, recovery: 0 },
+    jump: { startup: 0, active: 5, recovery: 0 }
   };
 
   const PLAN_FRAMES = 30;
@@ -192,6 +192,19 @@
     }
   }
 
+  function updateHitboxDisplay() {
+    if (frameActionP1 && frameActionP1.type === 'light' && frameActionP1.currentFrame >= frameActionP1.startup && frameActionP1.currentFrame < frameActionP1.startup + frameActionP1.active) {
+      elements.avatarP1.classList.add('attacking-light-active');
+    } else {
+      elements.avatarP1.classList.remove('attacking-light-active');
+    }
+    if (frameActionP2 && frameActionP2.type === 'light' && frameActionP2.currentFrame >= frameActionP2.startup && frameActionP2.currentFrame < frameActionP2.startup + frameActionP2.active) {
+      elements.avatarP2.classList.add('attacking-light-active');
+    } else {
+      elements.avatarP2.classList.remove('attacking-light-active');
+    }
+  }
+
   function frameTick() {
     let busy = false;
     if (frameActionP1) {
@@ -204,6 +217,7 @@
       if (frameActionP2.currentFrame >= frameActionP2.totalFrames) frameActionP2 = null;
       else busy = true;
     }
+    updateHitboxDisplay();
     updateFrameDataDisplay();
     if (!busy && frameTimerId) {
       clearInterval(frameTimerId);
@@ -277,7 +291,7 @@
       } else {
         frameAction = null;
       }
-      
+
       if (playerNum === 1) frameActionP1 = frameAction;
       else frameActionP2 = frameAction;
     }
@@ -285,6 +299,7 @@
     processPlayerAction(1, planP1);
     processPlayerAction(2, planP2);
 
+    updateHitboxDisplay();
     updateUI();
     const pct = (planCurrentFrame / PLAN_FRAMES) * 100;
     elements.framePlanCursorP1.style.left = pct + '%';
