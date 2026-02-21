@@ -56,7 +56,9 @@
     frameCursorP1: document.getElementById('frame-cursor-p1'),
     frameCursorP2: document.getElementById('frame-cursor-p2'),
     frameLabelP1: document.getElementById('frame-label-p1'),
-    frameLabelP2: document.getElementById('frame-label-p2')
+    frameLabelP2: document.getElementById('frame-label-p2'),
+    previewSlider: document.getElementById('preview-slider'),
+    previewDisplay: document.getElementById('preview-frame-display')
   };
 
   /** Plan: array of { type, startFrame }. Each action occupies startFrame..startFrame+totalFrames-1. */
@@ -69,6 +71,16 @@
   let frameActionP1 = null;
   let frameActionP2 = null;
   let frameTimerId = null;
+
+  let baseState = null;
+  function saveBaseState() {
+    baseState = JSON.parse(JSON.stringify(state));
+  }
+  function restoreBaseState() {
+    if (baseState) {
+      Object.assign(state, JSON.parse(JSON.stringify(baseState)));
+    }
+  }
 
   function buildGrid() {
     elements.grid.innerHTML = '';
@@ -138,6 +150,7 @@
               elements.optionsHint.textContent = 'Action removed from timeline.';
             }
             buildPlanBar(window.__draggedPlayer);
+            onPlanChanged();
             window.__draggedOriginal = null;
             window.__draggedPlayer = null;
           }
@@ -188,6 +201,7 @@
     if (start < 0) return false;
     planArray.push({ type: actionType, startFrame: start });
     buildPlanBar(playerNum);
+    onPlanChanged();
     return true;
   }
 
@@ -196,6 +210,7 @@
     planP2 = [];
     buildPlanBar(1);
     buildPlanBar(2);
+    onPlanChanged();
   }
 
   /** Get current action and phase for a plan array at global plan frame (during execution). */
@@ -273,6 +288,91 @@
     return planTimerId != null;
   }
 
+  function processPlayerAction(playerNum, planArray, silent) {
+    const info = getActionAtPlanFrame(planArray, planCurrentFrame);
+    let frameAction = playerNum === 1 ? frameActionP1 : frameActionP2;
+
+    if (info) {
+      const fd = FRAME_DATA[info.type];
+      const total = getTotalFrames(info.type);
+      const actionStart = (function () {
+        for (let i = 0; i < planArray.length; i++) {
+          const e = planArray[i];
+          const t = getTotalFrames(e.type);
+          if (planCurrentFrame >= e.startFrame && planCurrentFrame < e.startFrame + t)
+            return { start: e.startFrame, total: t, type: e.type };
+        }
+        return null;
+      })();
+      if (actionStart) {
+        const localFrame = planCurrentFrame - actionStart.start;
+        if (!frameAction || frameAction.type !== actionStart.type) {
+          frameAction = {
+            type: actionStart.type,
+            startup: fd.startup,
+            active: fd.active,
+            recovery: fd.recovery,
+            totalFrames: actionStart.total,
+            currentFrame: localFrame
+          };
+        } else {
+          frameAction.currentFrame = localFrame;
+        }
+        if (['light', 'medium', 'heavy'].includes(info.type) && info.phase === 'active' && localFrame === fd.startup) {
+          doAttack(info.type, playerNum, silent);
+        }
+        if (['left', 'right', 'down', 'jump'].includes(info.type)) {
+          applyMovement(info.type, localFrame, playerNum);
+        }
+      }
+    } else {
+      frameAction = null;
+    }
+
+    if (playerNum === 1) frameActionP1 = frameAction;
+    else frameActionP2 = frameAction;
+  }
+
+  function simulatePlan(targetFrame) {
+    if (!baseState) saveBaseState();
+    restoreBaseState();
+    frameActionP1 = null;
+    frameActionP2 = null;
+
+    for (let f = 0; f < targetFrame; f++) {
+      planCurrentFrame = f;
+      processPlayerAction(1, planP1, true);
+      processPlayerAction(2, planP2, true);
+      updateHitboxDisplay();
+      updateUI();
+    }
+
+    if (targetFrame === 0) {
+      updateHitboxDisplay();
+      updateUI();
+    }
+
+    const pct = targetFrame > 0 ? (targetFrame / PLAN_FRAMES) * 100 : 0;
+    elements.framePlanCursorP1.style.left = pct + '%';
+    elements.framePlanCursorP2.style.left = pct + '%';
+
+    if (targetFrame > 0) {
+      elements.framePlanCursorP1.classList.add('visible');
+      elements.framePlanCursorP2.classList.add('visible');
+    } else {
+      elements.framePlanCursorP1.classList.remove('visible');
+      elements.framePlanCursorP2.classList.remove('visible');
+    }
+
+    updateFrameDataDisplay();
+  }
+
+  function onPlanChanged() {
+    if (!isExecuting()) {
+      simulatePlan(parseInt(elements.previewSlider.value, 10));
+    }
+  }
+
   /** Run one tick of plan execution (one frame). */
   function planExecutionTick() {
     if (planCurrentFrame >= PLAN_FRAMES) {
@@ -281,6 +381,10 @@
       frameActionP1 = null;
       frameActionP2 = null;
       clearPlan();
+      saveBaseState();
+      elements.previewSlider.value = 0;
+      elements.previewDisplay.textContent = '0 / 30';
+      elements.previewSlider.disabled = false;
       elements.framePlanCursorP1.classList.remove('visible');
       elements.framePlanCursorP2.classList.remove('visible');
       elements.btnGo.disabled = false;
@@ -288,51 +392,6 @@
       updateFrameDataDisplay();
       updateUI();
       return;
-    }
-
-    function processPlayerAction(playerNum, planArray) {
-      const info = getActionAtPlanFrame(planArray, planCurrentFrame);
-      let frameAction = playerNum === 1 ? frameActionP1 : frameActionP2;
-
-      if (info) {
-        const fd = FRAME_DATA[info.type];
-        const total = getTotalFrames(info.type);
-        const actionStart = (function () {
-          for (let i = 0; i < planArray.length; i++) {
-            const e = planArray[i];
-            const t = getTotalFrames(e.type);
-            if (planCurrentFrame >= e.startFrame && planCurrentFrame < e.startFrame + t)
-              return { start: e.startFrame, total: t, type: e.type };
-          }
-          return null;
-        })();
-        if (actionStart) {
-          const localFrame = planCurrentFrame - actionStart.start;
-          if (!frameAction || frameAction.type !== actionStart.type) {
-            frameAction = {
-              type: actionStart.type,
-              startup: fd.startup,
-              active: fd.active,
-              recovery: fd.recovery,
-              totalFrames: actionStart.total,
-              currentFrame: localFrame
-            };
-          } else {
-            frameAction.currentFrame = localFrame;
-          }
-          if (['light', 'medium', 'heavy'].includes(info.type) && info.phase === 'active' && localFrame === fd.startup) {
-            doAttack(info.type, playerNum);
-          }
-          if (['left', 'right', 'down', 'jump'].includes(info.type)) {
-            applyMovement(info.type, localFrame, playerNum);
-          }
-        }
-      } else {
-        frameAction = null;
-      }
-
-      if (playerNum === 1) frameActionP1 = frameAction;
-      else frameActionP2 = frameAction;
     }
 
     processPlayerAction(1, planP1);
@@ -402,6 +461,12 @@
       return;
     }
     if (planTimerId) return;
+
+    restoreBaseState();
+    elements.previewSlider.value = 0;
+    elements.previewDisplay.textContent = '0 / 30';
+    elements.previewSlider.disabled = true;
+
     planCurrentFrame = 0;
     elements.btnGo.disabled = true;
     elements.optionsHint.textContent = 'Executing plan…';
@@ -548,7 +613,7 @@
     return true;
   }
 
-  function doAttack(type, playerNum) {
+  function doAttack(type, playerNum, silent) {
     playerNum = playerNum || state.turn;
     const attacker = playerNum === 1 ? state.p1 : state.p2;
     const defender = playerNum === 1 ? state.p2 : state.p1;
@@ -574,20 +639,22 @@
       hitboxRect.top >= hurtboxRect.bottom
     );
 
-    attackerAvatar.classList.add('attacking');
-    setTimeout(function () { attackerAvatar.classList.remove('attacking'); }, 300);
+    if (!silent) {
+      attackerAvatar.classList.add('attacking');
+      setTimeout(function () { attackerAvatar.classList.remove('attacking'); }, 300);
+    }
 
     if (isHit) {
       const amount = damage[type];
       defender.health = Math.max(0, defender.health - amount);
-      elements.optionsHint.textContent = 'Hit! ' + amount + ' damage.';
+      if (!silent) elements.optionsHint.textContent = 'Hit! ' + amount + ' damage.';
     } else {
-      elements.optionsHint.textContent = 'Missed!';
+      if (!silent) elements.optionsHint.textContent = 'Missed!';
     }
 
     if (defender.health <= 0) state.gameOver = state.turn;
-    else if (!isExecuting()) endTurn();
-    updateUI();
+    else if (!isExecuting() && !silent) endTurn();
+    if (!silent) updateUI();
   }
 
   function handleInput(directionOrAttack) {
@@ -764,10 +831,18 @@
   }
 
   function init() {
+    saveBaseState();
     buildGrid();
     bindPlanBar();
     elements.optionsHint.textContent = 'Drag Light (16 frames) to the bar above. Fill up to 30 frames, then press Go.';
     updateUI();
+
+    // Bind slider events
+    elements.previewSlider.addEventListener('input', function (e) {
+      const targetFrame = parseInt(e.target.value, 10);
+      elements.previewDisplay.textContent = targetFrame + ' / ' + PLAN_FRAMES;
+      simulatePlan(targetFrame);
+    });
   }
 
   init();

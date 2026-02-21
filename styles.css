@@ -439,6 +439,35 @@ body {
   margin-top: 0.25rem;
 }
 
+.preview-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--panel-border);
+}
+
+.preview-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.preview-slider {
+  flex: 1;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.preview-frame-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 0.85rem;
+  min-width: 4ch;
+  text-align: right;
+  color: var(--accent);
+}
+
 /* ----- Controller ----- */
 .controller {
   background: var(--panel-bg);
