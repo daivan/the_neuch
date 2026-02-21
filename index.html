@@ -9,7 +9,19 @@
 </head>
 
 <body>
-  <div class="game-container">
+  <div id="start-screen" class="start-screen">
+    <div class="start-content">
+      <h1 class="game-title">Slice Fight</h1>
+      <p class="game-subtitle">Turn-Based Tactical Fighter</p>
+      <div class="menu">
+        <button type="button" class="menu-btn disabled" disabled>Campaign</button>
+        <button type="button" class="menu-btn disabled" disabled>Online</button>
+        <button type="button" class="menu-btn" id="btn-practice">Practice</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-container" class="game-container" style="display: none;">
     <header class="game-header">
       <div class="player-info player1-info">
         <span class="player-name">P1</span>

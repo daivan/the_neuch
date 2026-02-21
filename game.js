@@ -45,6 +45,9 @@
     btnMedium: document.getElementById('btn-medium'),
     btnHeavy: document.getElementById('btn-heavy'),
     btnGo: document.getElementById('btn-go'),
+    btnPractice: document.getElementById('btn-practice'),
+    startScreen: document.getElementById('start-screen'),
+    gameContainer: document.getElementById('game-container'),
     framePlanBarP1: document.getElementById('frame-plan-bar-p1'),
     framePlanWrapP1: document.getElementById('frame-plan-wrap-p1'),
     framePlanCursorP1: document.getElementById('frame-plan-cursor-p1'),
@@ -836,6 +839,11 @@
     bindPlanBar();
     elements.optionsHint.textContent = 'Drag Light (16 frames) to the bar above. Fill up to 30 frames, then press Go.';
     updateUI();
+
+    elements.btnPractice.addEventListener('click', function () {
+      elements.startScreen.style.display = 'none';
+      elements.gameContainer.style.display = 'flex';
+    });
 
     // Bind slider events
     elements.previewSlider.addEventListener('input', function (e) {

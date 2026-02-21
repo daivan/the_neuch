@@ -39,6 +39,101 @@ body {
   gap: 1rem;
 }
 
+/* ----- Start Screen ----- */
+.start-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-dark);
+  z-index: 100;
+}
+
+.start-content {
+  text-align: center;
+  background: var(--panel-bg);
+  border: 2px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 3rem;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+.game-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 3.5rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 20px var(--accent);
+}
+
+.game-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  margin-bottom: 2.5rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.menu-btn {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  padding: 1rem;
+  border: 2px solid var(--slice-border);
+  border-radius: 8px;
+  background: var(--slice-bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.menu-btn:not(:disabled):hover {
+  background: rgba(255, 51, 102, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.2);
+}
+
+.menu-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.menu-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.menu-btn.disabled::after {
+  content: 'Coming Soon';
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  background: var(--panel-border);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
 /* ----- Header: health & turn ----- */
 .game-header {
   display: flex;
