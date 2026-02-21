@@ -10,6 +10,7 @@ function init() {
     elements.turnIndicator = document.getElementById('turn-indicator');
     elements.optionsHint = document.getElementById('options-hint');
     elements.btnLight = document.getElementById('btn-light');
+    elements.btnBlock = document.getElementById('btn-block');
     elements.btnMedium = document.getElementById('btn-medium');
     elements.btnHeavy = document.getElementById('btn-heavy');
     elements.btnGo = document.getElementById('btn-go');

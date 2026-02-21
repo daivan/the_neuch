@@ -506,6 +506,10 @@ body {
   background: #f59e0b;
 }
 
+.frame-slot.filled.block {
+  background: #38bdf8;
+}
+
 .frame-slot.hover-startup {
   background: rgba(148, 163, 184, 0.7);
   opacity: 1;
@@ -722,6 +726,12 @@ body {
   border-color: #6ee7b7;
   background: rgba(110, 231, 183, 0.15);
   color: #6ee7b7;
+}
+
+.attack-btn.block {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
 }
 
 .attack-btn.medium {

@@ -236,10 +236,17 @@ function doAttack(type, playerNum, silent) {
         setTimeout(function () { attackerAvatar.classList.remove('attacking'); }, 300);
     }
 
+    const defenderAction = playerNum === 1 ? frameActionP2 : frameActionP1;
+    const isBlocking = defenderAction && defenderAction.type === 'block';
+
     if (isHit) {
-        const amount = damage[type];
-        defender.health = Math.max(0, defender.health - amount);
-        if (!silent) elements.optionsHint.textContent = 'Hit! ' + amount + ' damage.';
+        if (isBlocking) {
+            if (!silent) elements.optionsHint.textContent = 'Blocked! 0 damage.';
+        } else {
+            const amount = damage[type];
+            defender.health = Math.max(0, defender.health - amount);
+            if (!silent) elements.optionsHint.textContent = 'Hit! ' + amount + ' damage.';
+        }
     } else {
         if (!silent) elements.optionsHint.textContent = 'Missed!';
     }
