@@ -203,7 +203,7 @@ function startPlanExecution() {
 }
 
 function isExecuting() {
-    return planTimerId != null;
+    return planTimerId != null || subgameState != null;
 }
 
 function doAttack(type, playerNum, silent) {
@@ -245,14 +245,17 @@ function doAttack(type, playerNum, silent) {
         } else {
             const amount = damage[type];
             defender.health = Math.max(0, defender.health - amount);
-            if (!silent) elements.optionsHint.textContent = 'Hit! ' + amount + ' damage.';
+            if (!silent) {
+                elements.optionsHint.textContent = 'Hit! ' + amount + ' damage.';
+                startSubGame(playerNum, defender === state.p1 ? 1 : 2);
+            }
         }
     } else {
         if (!silent) elements.optionsHint.textContent = 'Missed!';
     }
 
     if (defender.health <= 0) state.gameOver = state.turn;
-    else if (!isExecuting() && !silent) endTurn();
+    else if (!isExecuting() && !silent && !subgameState) endTurn();
     if (!silent) updateUI();
 }
 
@@ -268,5 +271,152 @@ function landIfInAir() {
     if (current.row < FLOOR_ROW) {
         current.row = FLOOR_ROW;
         current.stepY = 0;
+    }
+}
+
+function handleInput(directionOrAttack) {
+    if (state.gameOver) return;
+
+    const current = state.turn === 1 ? state.p1 : state.p2;
+    const onFloor = isOnFloor(current);
+
+    if (directionOrAttack === 'up') {
+        if (onFloor && current.row > 0) {
+            move(current, -1, 0);
+            startFrameAction(state.turn, 'move');
+            elements.optionsHint.textContent = 'Jumped!';
+            endTurn();
+        } else if (!onFloor) {
+            elements.optionsHint.textContent = "Already in the air.";
+        } else {
+            elements.optionsHint.textContent = "Can't jump higher.";
+        }
+    } else if (directionOrAttack === 'down') {
+        if (!onFloor) {
+            current.row = FLOOR_ROW;
+            startFrameAction(state.turn, 'move');
+            elements.optionsHint.textContent = 'Landed.';
+            endTurn();
+        } else {
+            elements.optionsHint.textContent = "Already on the floor.";
+        }
+    } else if (directionOrAttack === 'left') {
+        if (!onFloor) {
+            elements.optionsHint.textContent = "Move left/right only on the floor.";
+            return;
+        }
+        if (move(current, 0, -1)) {
+            startFrameAction(state.turn, 'move');
+            elements.optionsHint.textContent = 'Moved left.';
+            endTurn();
+        } else {
+            elements.optionsHint.textContent = "Can't move further left.";
+        }
+    } else if (directionOrAttack === 'right') {
+        if (!onFloor) {
+            elements.optionsHint.textContent = "Move left/right only on the floor.";
+            return;
+        }
+        if (move(current, 0, 1)) {
+            startFrameAction(state.turn, 'move');
+            elements.optionsHint.textContent = 'Moved right.';
+            endTurn();
+        } else {
+            elements.optionsHint.textContent = "Can't move further right.";
+        }
+    } else if (['light', 'medium', 'heavy'].includes(directionOrAttack)) {
+        startFrameAction(state.turn, directionOrAttack);
+        doAttack(directionOrAttack);
+    }
+
+    updateUI();
+}
+
+function startSubGame(attackerNum, defenderNum) {
+    if (planTimerId) {
+        clearInterval(planTimerId);
+        planTimerId = null;
+    }
+    subgameState = {
+        attacker: attackerNum,
+        defender: defenderNum,
+        stage: 1, // 1 = first hit, 2 = second hit, 3 = final hit
+        p1Action: null,
+        p2Action: null,
+        roundWinner: null
+    };
+    if (typeof showSubGameUI === 'function') {
+        showSubGameUI(attackerNum, defenderNum);
+    }
+}
+
+function resolveSubGame() {
+    if (!subgameState || !subgameState.p1Action || !subgameState.p2Action) return;
+
+    const p1 = subgameState.p1Action;
+    const p2 = subgameState.p2Action;
+    const stage = subgameState.stage;
+    const damage = SUBGAME_DAMAGE[stage - 1];
+
+    // Determine winner using counter system
+    let roundWinner = null;
+    let message = '';
+    
+    if (p1 === p2) {
+        // Same action - attacker wins this round
+        roundWinner = subgameState.attacker;
+        message = `Both chose ${p1}! Attacker wins round ${stage}.`;
+    } else if (COUNTER_MATRIX[p1] === p2) {
+        // P2 counters P1
+        roundWinner = 2;
+        message = `P2's ${p2} counters P1's ${p1}!`;
+    } else if (COUNTER_MATRIX[p2] === p1) {
+        // P1 counters P2
+        roundWinner = 1;
+        message = `P1's ${p1} counters P2's ${p2}!`;
+    } else {
+        // No counter - attacker wins
+        roundWinner = subgameState.attacker;
+        message = `No counter! Attacker wins round ${stage}.`;
+    }
+
+    subgameState.roundWinner = roundWinner;
+    elements.optionsHint.textContent = message;
+
+    // Apply damage if attacker won the round
+    if (roundWinner === subgameState.attacker) {
+        const defender = roundWinner === 1 ? state.p2 : state.p1;
+        defender.health = Math.max(0, defender.health - damage);
+        elements.optionsHint.textContent += ` ${damage} damage dealt!`;
+    }
+
+    // Check if subgame should continue or end
+    if (stage < 3 && roundWinner === subgameState.attacker) {
+        // Continue to next stage
+        subgameState.stage++;
+        subgameState.p1Action = null;
+        subgameState.p2Action = null;
+        subgameState.roundWinner = null;
+        
+        if (typeof updateSubGameUI === 'function') {
+            updateSubGameUI();
+        }
+        return; // Don't hide UI, continue subgame
+    }
+
+    // Subgame ends - either defender won a round or attacker completed all 3 stages
+    if (typeof hideSubGameUI === 'function') {
+        hideSubGameUI();
+    }
+    subgameState = null;
+
+    if (state.p1.health <= 0 || state.p2.health <= 0) {
+        state.gameOver = state.p1.health <= 0 ? 2 : 1;
+    } else if (!state.gameOver && planCurrentFrame < PLAN_FRAMES) {
+        elements.optionsHint.textContent += ' Resuming plan...';
+        planTimerId = setInterval(planExecutionTick, FRAME_MS);
+    } else if (!state.gameOver) {
+        endTurn();
+        updateUI();
     }
 }

@@ -32,6 +32,13 @@ function init() {
     elements.frameLabelP2 = document.getElementById('frame-label-p2');
     elements.previewSlider = document.getElementById('preview-slider');
     elements.previewDisplay = document.getElementById('preview-frame-display');
+    elements.hitSubgame = document.getElementById('hit-subgame');
+    elements.subgameButtonsP1 = document.getElementById('subgame-buttons-p1');
+    elements.subgameButtonsP2 = document.getElementById('subgame-buttons-p2');
+    elements.subgameStatusP1 = document.getElementById('subgame-status-p1');
+    elements.subgameStatusP2 = document.getElementById('subgame-status-p2');
+    elements.subgameRoleP1 = document.getElementById('subgame-role-p1');
+    elements.subgameRoleP2 = document.getElementById('subgame-role-p2');
 
     saveBaseState();
     buildGrid();

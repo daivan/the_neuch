@@ -307,3 +307,123 @@ function bindPlanBar() {
     setupDragDrop(elements.framePlanWrapP1, 1);
     setupDragDrop(elements.framePlanWrapP2, 2);
 }
+
+const SUBGAME_ACTIONS = {
+    attacker: ['Continue combo', 'Block', 'Reset', 'Grab'],
+    defender: ['Reversal', 'Challenge', 'Block', 'Break']
+};
+
+function showSubGameUI(attackerNum, defenderNum) {
+    if (!elements.hitSubgame) return;
+    elements.hitSubgame.style.display = 'block';
+
+    elements.subgameButtonsP1.innerHTML = '';
+    elements.subgameButtonsP2.innerHTML = '';
+    elements.subgameStatusP1.textContent = 'Waiting for action...';
+    elements.subgameStatusP2.textContent = 'Waiting for action...';
+
+    elements.subgameRoleP1.textContent = attackerNum === 1 ? 'Attacker' : 'Defender';
+    elements.subgameRoleP2.textContent = attackerNum === 2 ? 'Attacker' : 'Defender';
+
+    // Show current stage and damage
+    const stage = subgameState ? subgameState.stage : 1;
+    const damage = SUBGAME_DAMAGE[stage - 1];
+    elements.subgameStatusP1.textContent = `Stage ${stage}/3 - ${damage} damage at stake`;
+    elements.subgameStatusP2.textContent = `Stage ${stage}/3 - ${damage} damage at stake`;
+
+    const p1Actions = attackerNum === 1 ? SUBGAME_ACTIONS.attacker : SUBGAME_ACTIONS.defender;
+    const p2Actions = attackerNum === 2 ? SUBGAME_ACTIONS.attacker : SUBGAME_ACTIONS.defender;
+
+    p1Actions.forEach(action => {
+        const btn = document.createElement('button');
+        btn.className = 'subgame-btn';
+        btn.textContent = action;
+        btn.onclick = () => selectSubGameAction(1, action, btn);
+        elements.subgameButtonsP1.appendChild(btn);
+    });
+
+    p2Actions.forEach(action => {
+        const btn = document.createElement('button');
+        btn.className = 'subgame-btn';
+        btn.textContent = action;
+        btn.onclick = () => selectSubGameAction(2, action, btn);
+        elements.subgameButtonsP2.appendChild(btn);
+    });
+
+    if (state.gameMode === 'campaign') {
+        const aiAction = p2Actions[Math.floor(Math.random() * p2Actions.length)];
+        setTimeout(() => {
+            if (subgameState) selectSubGameAction(2, aiAction, null);
+        }, 800);
+    }
+}
+
+function selectSubGameAction(playerNum, action, btnElement) {
+    if (!subgameState) return;
+
+    if (playerNum === 1) subgameState.p1Action = action;
+    else subgameState.p2Action = action;
+
+    if (btnElement) {
+        const container = playerNum === 1 ? elements.subgameButtonsP1 : elements.subgameButtonsP2;
+        Array.from(container.children).forEach(b => b.classList.remove('selected'));
+        btnElement.classList.add('selected');
+
+        Array.from(container.children).forEach(b => b.disabled = true);
+        btnElement.disabled = false;
+    }
+
+    const statusEl = playerNum === 1 ? elements.subgameStatusP1 : elements.subgameStatusP2;
+    statusEl.textContent = 'Ready';
+
+    if (subgameState.p1Action && subgameState.p2Action) {
+        setTimeout(resolveSubGame, 500);
+    }
+}
+
+function hideSubGameUI() {
+    if (elements.hitSubgame) elements.hitSubgame.style.display = 'none';
+}
+
+function updateSubGameUI() {
+    if (!subgameState || !elements.hitSubgame) return;
+    
+    // Reset buttons for next stage
+    elements.subgameButtonsP1.innerHTML = '';
+    elements.subgameButtonsP2.innerHTML = '';
+    elements.subgameStatusP1.textContent = 'Waiting for action...';
+    elements.subgameStatusP2.textContent = 'Waiting for action...';
+
+    // Show updated stage and damage
+    const stage = subgameState.stage;
+    const damage = SUBGAME_DAMAGE[stage - 1];
+    elements.subgameStatusP1.textContent = `Stage ${stage}/3 - ${damage} damage at stake`;
+    elements.subgameStatusP2.textContent = `Stage ${stage}/3 - ${damage} damage at stake`;
+
+    const attackerNum = subgameState.attacker;
+    const p1Actions = attackerNum === 1 ? SUBGAME_ACTIONS.attacker : SUBGAME_ACTIONS.defender;
+    const p2Actions = attackerNum === 2 ? SUBGAME_ACTIONS.attacker : SUBGAME_ACTIONS.defender;
+
+    p1Actions.forEach(action => {
+        const btn = document.createElement('button');
+        btn.className = 'subgame-btn';
+        btn.textContent = action;
+        btn.onclick = () => selectSubGameAction(1, action, btn);
+        elements.subgameButtonsP1.appendChild(btn);
+    });
+
+    p2Actions.forEach(action => {
+        const btn = document.createElement('button');
+        btn.className = 'subgame-btn';
+        btn.textContent = action;
+        btn.onclick = () => selectSubGameAction(2, action, btn);
+        elements.subgameButtonsP2.appendChild(btn);
+    });
+
+    if (state.gameMode === 'campaign') {
+        const aiAction = p2Actions[Math.floor(Math.random() * p2Actions.length)];
+        setTimeout(() => {
+            if (subgameState) selectSubGameAction(2, aiAction, null);
+        }, 800);
+    }
+}

@@ -42,6 +42,23 @@ let planTimerId = null;
 let frameActionP1 = null;
 let frameActionP2 = null;
 let frameTimerId = null;
+let subgameState = null;
+
+// Three-stage hit subgame damage progression
+const SUBGAME_DAMAGE = [5, 7, 10];
+
+// Counter system: what beats what (mapped to original button names)
+const COUNTER_MATRIX = {
+    'Continue combo': 'Break',    // Continue combo beats Break
+    'Block': 'Reversal',        // Block beats Reversal  
+    'Reset': 'Challenge',       // Reset beats Challenge
+    'Grab': 'Block',           // Grab beats Block
+    
+    'Reversal': 'Reset',       // Reversal beats Reset
+    'Challenge': 'Grab',        // Challenge beats Grab
+    'Block': 'Continue combo',   // Block beats Continue combo
+    'Break': 'Challenge'       // Break beats Challenge
+};
 
 let baseState = null;
 function saveBaseState() {

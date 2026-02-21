@@ -61,6 +61,22 @@
       </div>
     </section>
 
+    <section class="hit-subgame" id="hit-subgame" style="display: none;">
+      <h2 class="subgame-title" id="hit-subgame-title">HIT!</h2>
+      <div class="subgame-players">
+        <div class="subgame-p1" id="subgame-p1">
+          <span class="subgame-player-badge">P1 (<span id="subgame-role-p1"></span>)</span>
+          <div class="subgame-buttons" id="subgame-buttons-p1"></div>
+          <span class="subgame-status" id="subgame-status-p1"></span>
+        </div>
+        <div class="subgame-p2" id="subgame-p2">
+          <span class="subgame-player-badge">P2 (<span id="subgame-role-p2"></span>)</span>
+          <div class="subgame-buttons" id="subgame-buttons-p2"></div>
+          <span class="subgame-status" id="subgame-status-p2"></span>
+        </div>
+      </div>
+    </section>
+
     <section class="frame-data-panel">
       <h2 class="frame-data-title">Your plan — 30 frames (drag actions here, then Go)</h2>
       <div class="frame-plan-row">
@@ -127,8 +143,10 @@
           data-action="light">Light (16f)</button>
         <button type="button" class="attack-btn block draggable" id="btn-block" draggable="true"
           data-action="block">Block (1f)</button>
-        <button type="button" class="attack-btn medium" id="btn-medium" disabled title="Coming soon">Medium</button>
-        <button type="button" class="attack-btn heavy" id="btn-heavy" disabled title="Coming soon">Heavy</button>
+        <button type="button" class="attack-btn medium draggable" id="btn-medium" draggable="true"
+          data-action="medium">Medium (33f)</button>
+        <button type="button" class="attack-btn heavy draggable" id="btn-heavy" draggable="true"
+          data-action="heavy">Heavy (48f)</button>
       </div>
       <div class="go-area">
         <button type="button" class="go-btn" id="btn-go">Go</button>
