@@ -4,17 +4,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slice Fight — Turn-Based</title>
+  <title>The Neuch</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
   <div id="start-screen" class="start-screen">
     <div class="start-content">
-      <h1 class="game-title">Slice Fight</h1>
-      <p class="game-subtitle">Turn-Based Tactical Fighter</p>
+      <h1 class="game-title">The Neuch</h1>
+      <p class="game-subtitle">It's all in the frame data</p>
       <div class="menu">
-        <button type="button" class="menu-btn disabled" disabled>Campaign</button>
+        <button type="button" class="menu-btn" id="btn-campaign">Campaign</button>
         <button type="button" class="menu-btn disabled" disabled>Online</button>
         <button type="button" class="menu-btn" id="btn-practice">Practice</button>
       </div>
@@ -134,7 +134,12 @@
     </section>
   </div>
 
-  <script src="game.js"></script>
+  <script src="shared.js"></script>
+  <script src="utils.js"></script>
+  <script src="engine.js"></script>
+  <script src="ui.js"></script>
+  <script src="campaign.js"></script>
+  <script src="main.js"></script>
 </body>
 
 </html>

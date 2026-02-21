@@ -1,4 +1,5 @@
-# Slice Fight — Turn-Based Fighting Game
+# The Neuch
+*It's all in the frame data.*
 
 Two avatars fight on a stage divided into **5 horizontal slices**. You move between slices and attack. Same slice = full damage; distance reduces hit strength.
 
