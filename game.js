@@ -380,8 +380,8 @@
       planTimerId = null;
       frameActionP1 = null;
       frameActionP2 = null;
-      clearPlan();
       saveBaseState();
+      clearPlan();
       elements.previewSlider.value = 0;
       elements.previewDisplay.textContent = '0 / 30';
       elements.previewSlider.disabled = false;
