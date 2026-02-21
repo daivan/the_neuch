@@ -23,7 +23,7 @@ const FRAME_DATA = {
     right: { startup: 1, active: 0, recovery: 0 },
     down: { startup: 1, active: 0, recovery: 0 },
     jump: { startup: 0, active: 5, recovery: 0 },
-    block: { startup: 1, active: 0, recovery: 0 },
+    parry: { startup: 2, active: 5, recovery: 8 },
     forward_dash: { startup: 0, active: 5, recovery: 0 },
     backward_dash: { startup: 0, active: 5, recovery: 0 }
 };
@@ -52,13 +52,13 @@ const SUBGAME_DAMAGE = [5, 7, 10];
 // Counter system: what beats what (mapped to original button names)
 const COUNTER_MATRIX = {
     'Continue combo': 'Break',    // Continue combo beats Break
-    'Block': 'Reversal',        // Block beats Reversal  
+    'Parry': 'Reversal',        // Parry beats Reversal  
     'Reset': 'Challenge',       // Reset beats Challenge
-    'Grab': 'Block',           // Grab beats Block
+    'Grab': 'Parry',           // Grab beats Parry
     
     'Reversal': 'Reset',       // Reversal beats Reset
     'Challenge': 'Grab',        // Challenge beats Grab
-    'Block': 'Continue combo',   // Block beats Continue combo
+    'Parry': 'Continue combo',   // Parry beats Continue combo
     'Break': 'Challenge'       // Break beats Challenge
 };
 

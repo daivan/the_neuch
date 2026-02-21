@@ -309,8 +309,8 @@ function bindPlanBar() {
 }
 
 const SUBGAME_ACTIONS = {
-    attacker: ['Continue combo', 'Block', 'Reset', 'Grab'],
-    defender: ['Reversal', 'Challenge', 'Block', 'Break']
+    attacker: ['Continue combo', 'Parry', 'Reset', 'Grab'],
+    defender: ['Reversal', 'Challenge', 'Parry', 'Break']
 };
 
 function showSubGameUI(attackerNum, defenderNum) {

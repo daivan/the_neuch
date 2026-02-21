@@ -506,8 +506,20 @@ body {
   background: #f59e0b;
 }
 
-.frame-slot.filled.block {
+.frame-slot.filled.parry {
   background: #38bdf8;
+}
+
+.frame-slot.filled.parry.startup {
+  background: #94a3b8;
+}
+
+.frame-slot.filled.parry.active {
+  background: #22c55e;
+}
+
+.frame-slot.filled.parry.recovery {
+  background: #3b82f6;
 }
 
 .frame-slot.filled.forward_dash,
@@ -738,7 +750,7 @@ body {
   color: #6ee7b7;
 }
 
-.attack-btn.block {
+.attack-btn.parry {
   border-color: #38bdf8;
   background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
