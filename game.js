@@ -103,6 +103,45 @@
       if (info) {
         slot.classList.add('filled', info.type);
         if (info.phase) slot.classList.add(info.phase);
+
+        slot.draggable = true;
+        slot.dataset.action = info.type;
+        slot.dataset.startFrame = info.startFrame;
+        slot.dataset.player = playerNum;
+
+        slot.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', info.type);
+          window.__draggedAction = info.type;
+
+          const originalIndex = planArray.findIndex(item => item.startFrame === info.startFrame && item.type === info.type);
+          if (originalIndex !== -1) {
+            window.__draggedOriginal = planArray[originalIndex];
+            window.__draggedPlayer = playerNum;
+            planArray.splice(originalIndex, 1);
+            const siblingSlots = barEl.querySelectorAll(`[data-start-frame="${info.startFrame}"]`);
+            siblingSlots.forEach(s => {
+              s.style.opacity = '0.1';
+            });
+          }
+
+          e.dataTransfer.effectAllowed = 'move';
+        });
+
+        slot.addEventListener('dragend', function (e) {
+          window.__draggedAction = null;
+          clearHoverSlots();
+          if (window.__draggedOriginal) {
+            if (e.dataTransfer.dropEffect !== 'none') {
+              const pArray = window.__draggedPlayer === 1 ? planP1 : planP2;
+              pArray.push(window.__draggedOriginal);
+            } else {
+              elements.optionsHint.textContent = 'Action removed from timeline.';
+            }
+            buildPlanBar(window.__draggedPlayer);
+            window.__draggedOriginal = null;
+            window.__draggedPlayer = null;
+          }
+        });
       }
       barEl.appendChild(slot);
     }
@@ -122,7 +161,7 @@
         let phase = 'startup';
         if (i >= s + a) phase = 'recovery';
         else if (i >= s) phase = 'active';
-        result[start + i] = { type: entry.type, phase: phase };
+        result[start + i] = { type: entry.type, phase: phase, startFrame: start };
       }
     });
     return result;
@@ -510,23 +549,41 @@
   }
 
   function doAttack(type, playerNum) {
+    playerNum = playerNum || state.turn;
     const attacker = playerNum === 1 ? state.p1 : state.p2;
     const defender = playerNum === 1 ? state.p2 : state.p1;
-    const dist = manhattanDist(attacker, defender); // distance in sub-steps
 
-    let mult = 1;
-    if (dist === 0) mult = 1;
-    else if (dist <= STEPS_PER_CELL) mult = 0.6;  // same cell or 1 step away
-    else mult = 0.3;
+    const attackerAvatar = playerNum === 1 ? elements.avatarP1 : elements.avatarP2;
+    const defenderAvatar = playerNum === 1 ? elements.avatarP2 : elements.avatarP1;
 
-    const amount = Math.max(1, Math.floor(damage[type] * mult));
-    defender.health = Math.max(0, defender.health - amount);
+    // Temporarily apply active class to show hitbox and get client rects
+    const wasActive = attackerAvatar.classList.contains('attacking-light-active');
+    attackerAvatar.classList.add('attacking-light-active');
 
-    const avatar = playerNum === 1 ? elements.avatarP1 : elements.avatarP2;
-    avatar.classList.add('attacking');
-    setTimeout(function () { avatar.classList.remove('attacking'); }, 300);
+    const hitboxRect = attackerAvatar.querySelector('.hitbox').getBoundingClientRect();
+    const hurtboxRect = defenderAvatar.querySelector('.hurtbox').getBoundingClientRect();
 
-    elements.optionsHint.textContent = (dist === 0 ? 'Direct hit! ' : 'Distance hit. ') + amount + ' damage.';
+    if (!wasActive) {
+      attackerAvatar.classList.remove('attacking-light-active');
+    }
+
+    const isHit = !(
+      hitboxRect.right <= hurtboxRect.left ||
+      hitboxRect.left >= hurtboxRect.right ||
+      hitboxRect.bottom <= hurtboxRect.top ||
+      hitboxRect.top >= hurtboxRect.bottom
+    );
+
+    attackerAvatar.classList.add('attacking');
+    setTimeout(function () { attackerAvatar.classList.remove('attacking'); }, 300);
+
+    if (isHit) {
+      const amount = damage[type];
+      defender.health = Math.max(0, defender.health - amount);
+      elements.optionsHint.textContent = 'Hit! ' + amount + ' damage.';
+    } else {
+      elements.optionsHint.textContent = 'Missed!';
+    }
 
     if (defender.health <= 0) state.gameOver = state.turn;
     else if (!isExecuting()) endTurn();
@@ -633,7 +690,7 @@
     function setupDragDrop(wrap, playerNum) {
       wrap.addEventListener('dragover', function (e) {
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
+        e.dataTransfer.dropEffect = window.__draggedOriginal ? 'move' : 'copy';
         wrap.classList.add('drag-over');
 
         const actionType = window.__draggedAction;
@@ -679,9 +736,23 @@
         clearHoverSlots();
         const actionType = e.dataTransfer.getData('text/plain') || window.__draggedAction;
         if (!actionType || !FRAME_DATA[actionType]) return;
+
+        // Disallow dragging between players if desired (optional, currently allowed)
+        if (window.__draggedOriginal && window.__draggedPlayer !== playerNum) {
+          elements.optionsHint.textContent = 'Cannot drop action across different player timelines.';
+          return;
+        }
+
         const index = getPlanBarDropIndex(e, wrap);
         if (addToPlan(playerNum, actionType, index)) {
           elements.optionsHint.textContent = 'Added ' + actionType + ' to P' + playerNum + ' plan. Add more or press Go.';
+
+          if (window.__draggedOriginal) {
+            window.__draggedOriginal = null;
+            window.__draggedPlayer = null;
+            // Rebuild the source plan bar to clean up empty dragged items
+            buildPlanBar(playerNum);
+          }
         } else {
           elements.optionsHint.textContent = 'Not enough empty frames for ' + actionType + ' (needs ' + getTotalFrames(actionType) + ' frames).';
         }
