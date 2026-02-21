@@ -246,16 +246,14 @@ body {
 /* ----- Avatars ----- */
 .avatar {
   position: absolute;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+  width: 70px;
+  height: 110px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'Orbitron', sans-serif;
   font-weight: 900;
   font-size: 0.9rem;
-  border: 3px solid;
   transition: top 0.2s ease, left 0.2s ease;
   transform: translate(-50%, -50%);
   z-index: 2;
@@ -263,19 +261,33 @@ body {
 }
 
 .avatar-p1 {
-  border-color: var(--p1-color);
-  background: rgba(0, 212, 170, 0.2);
   color: var(--p1-color);
 }
 
 .avatar-p2 {
-  border-color: var(--p2-color);
-  background: rgba(255, 107, 53, 0.2);
   color: var(--p2-color);
 }
 
 .avatar.attacking {
   animation: attack-pulse 0.3s ease;
+}
+
+.character-sprite {
+  width: 70px;
+  height: 110px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  object-fit: none;
+  object-position: 0 0;
+}
+
+.avatar-p1 .character-sprite {
+  object-position: 0 0;
+}
+
+.avatar-p2 .character-sprite {
+  object-position: 0 0;
 }
 
 @keyframes attack-pulse {
