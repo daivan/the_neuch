@@ -23,7 +23,9 @@ const FRAME_DATA = {
     right: { startup: 1, active: 0, recovery: 0 },
     down: { startup: 1, active: 0, recovery: 0 },
     jump: { startup: 0, active: 5, recovery: 0 },
-    block: { startup: 1, active: 0, recovery: 0 }
+    block: { startup: 1, active: 0, recovery: 0 },
+    forward_dash: { startup: 0, active: 5, recovery: 0 },
+    backward_dash: { startup: 0, active: 5, recovery: 0 }
 };
 
 const PLAN_FRAMES = 30;

@@ -72,7 +72,7 @@ function processPlayerAction(playerNum, planArray, silent) {
             if (['light', 'medium', 'heavy'].includes(info.type) && info.phase === 'active' && localFrame === fd.startup) {
                 doAttack(info.type, playerNum, silent);
             }
-            if (['left', 'right', 'down', 'jump'].includes(info.type)) {
+            if (['left', 'right', 'down', 'jump', 'forward_dash', 'backward_dash'].includes(info.type)) {
                 applyMovement(info.type, localFrame, playerNum);
             }
         }
@@ -181,6 +181,16 @@ function applyMovement(type, localFrame, playerNum) {
         if (localFrame === 0 && isOnFloor(p) && p.row > 0) moveStep(p, 0, -1);
         else if (localFrame >= 1 && localFrame <= 4) moveStep(p, 0, -1);
         if (localFrame === 4) { p.row = FLOOR_ROW; p.stepY = 0; }
+    } else if (type === 'forward_dash') {
+        if (isOnFloor(p)) {
+            // Move 2 squares per frame (10 steps total over 5 frames)
+            moveStep(p, 2, 0);
+        }
+    } else if (type === 'backward_dash') {
+        if (isOnFloor(p)) {
+            // Move 2 squares per frame (10 steps total over 5 frames)
+            moveStep(p, -2, 0);
+        }
     }
 }
 
