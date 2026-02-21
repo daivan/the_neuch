@@ -611,28 +611,73 @@
         const action = e.target.dataset.action;
         if (action) {
           e.dataTransfer.setData('text/plain', action);
+          // Also set it globally so dragover can access it easily (e.dataTransfer is sometimes restricted in dragover)
+          window.__draggedAction = action;
           e.dataTransfer.effectAllowed = 'copy';
           e.target.classList.add('dragging');
         }
       });
       btn.addEventListener('dragend', function (e) {
         e.target.classList.remove('dragging');
+        window.__draggedAction = null;
+        clearHoverSlots();
       });
     });
+
+    function clearHoverSlots() {
+      document.querySelectorAll('.frame-slot').forEach(function (slot) {
+        slot.classList.remove('hover-startup', 'hover-active', 'hover-recovery', 'hover-invalid');
+      });
+    }
 
     function setupDragDrop(wrap, playerNum) {
       wrap.addEventListener('dragover', function (e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copy';
         wrap.classList.add('drag-over');
+
+        const actionType = window.__draggedAction;
+        if (!actionType || !FRAME_DATA[actionType]) return;
+
+        const index = getPlanBarDropIndex(e, wrap);
+        const planArray = playerNum === 1 ? planP1 : planP2;
+        const total = getTotalFrames(actionType);
+
+        // Find if it fits
+        const start = findEmptyBlock(planArray, total, index);
+
+        clearHoverSlots();
+
+        const slotEls = wrap.querySelectorAll('.frame-slot');
+        if (start >= 0) {
+          // Fits
+          const fd = FRAME_DATA[actionType];
+          const s = fd.startup || 0;
+          const a = fd.active || 0;
+          for (let i = 0; i < total; i++) {
+            if (start + i < PLAN_FRAMES && slotEls[start + i]) {
+              let phase = 'hover-startup';
+              if (i >= s + a) phase = 'hover-recovery';
+              else if (i >= s) phase = 'hover-active';
+              slotEls[start + i].classList.add(phase);
+            }
+          }
+        } else {
+          // Doesn't fit, show invalid if hovering over something
+          if (slotEls[index] && !slotEls[index].classList.contains('filled')) {
+            slotEls[index].classList.add('hover-invalid');
+          }
+        }
       });
       wrap.addEventListener('dragleave', function () {
         wrap.classList.remove('drag-over');
+        clearHoverSlots();
       });
       wrap.addEventListener('drop', function (e) {
         e.preventDefault();
         wrap.classList.remove('drag-over');
-        const actionType = e.dataTransfer.getData('text/plain');
+        clearHoverSlots();
+        const actionType = e.dataTransfer.getData('text/plain') || window.__draggedAction;
         if (!actionType || !FRAME_DATA[actionType]) return;
         const index = getPlanBarDropIndex(e, wrap);
         if (addToPlan(playerNum, actionType, index)) {
