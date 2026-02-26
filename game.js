@@ -2,14 +2,14 @@
   'use strict';
 
   const COLS = 7;
-  const ROWS = 4;
+  const ROWS = 2;
   const FLOOR_ROW = ROWS - 1; // last row is the floor
   const STEPS_PER_CELL = 5;   // each cell split into 5 steps; 1 frame = 1 step, 5 frames = 1 cell
 
   const state = {
     turn: 1,
-    p1: { row: FLOOR_ROW, col: 0, stepX: 0, stepY: 0, health: 100 },
-    p2: { row: FLOOR_ROW, col: COLS - 1, stepX: 0, stepY: 0, health: 100 },
+    p1: { row: FLOOR_ROW, col: 2, stepX: 0, stepY: 0, health: 100 },
+    p2: { row: FLOOR_ROW, col: 4, stepX: 0, stepY: 0, health: 100 },
     gameOver: null
   };
 
