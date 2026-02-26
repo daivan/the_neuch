@@ -31,14 +31,6 @@ function updateUI() {
     positionAvatar(elements.avatarP1, p1.row, p1.col, p1.stepX || 0, p1.stepY || 0);
     positionAvatar(elements.avatarP2, p2.row, p2.col, p2.stepX || 0, p2.stepY || 0);
 
-    getAllCells().forEach(function (el) {
-        el.classList.remove('highlight-p1', 'highlight-p2');
-        var r = parseInt(el.dataset.row, 10);
-        var c = parseInt(el.dataset.col, 10);
-        if (r === p1.row && c === p1.col) el.classList.add('highlight-p1');
-        if (r === p2.row && c === p2.col) el.classList.add('highlight-p2');
-    });
-
     if (state.gameOver) {
         elements.turnIndicator.textContent = state.gameOver === 1 ? 'P1 Wins!' : 'P2 Wins!';
         setControllerEnabled(false);
