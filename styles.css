@@ -284,6 +284,7 @@ body {
 
 .avatar-p1 .character-sprite {
   object-position: 0 0;
+  transform: scaleX(-1);
 }
 
 .avatar-p2 .character-sprite {
