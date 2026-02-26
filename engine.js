@@ -72,7 +72,7 @@ function processPlayerAction(playerNum, planArray, silent) {
             if (['light', 'medium', 'heavy'].includes(info.type) && info.phase === 'active' && localFrame === fd.startup) {
                 doAttack(info.type, playerNum, silent);
             }
-            if (['left', 'right', 'down', 'jump', 'forward_dash', 'backward_dash'].includes(info.type)) {
+            if (['left', 'right', 'down', 'forward_dash', 'backward_dash'].includes(info.type)) {
                 applyMovement(info.type, localFrame, playerNum);
             }
         }
@@ -207,10 +207,6 @@ function applyMovement(type, localFrame, playerNum) {
             p.row = FLOOR_ROW;
             p.stepY = 0;
         }
-    } else if (type === 'jump') {
-        if (localFrame === 0 && isOnFloor(p) && p.row > 0) moveStep(p, 0, -1);
-        else if (localFrame >= 1 && localFrame <= 4) moveStep(p, 0, -1);
-        if (localFrame === 4) { p.row = FLOOR_ROW; p.stepY = 0; }
     } else if (type === 'forward_dash') {
         if (isOnFloor(p)) {
             // Move 2 squares per frame (10 steps total over 5 frames)
@@ -288,40 +284,85 @@ function doAttack(type, playerNum, silent) {
     const attackerAvatar = playerNum === 1 ? elements.avatarP1 : elements.avatarP2;
     const defenderAvatar = playerNum === 1 ? elements.avatarP2 : elements.avatarP1;
 
-    const wasActive = attackerAvatar.classList.contains('attacking-light-active');
-    attackerAvatar.classList.add('attacking-light-active');
+    // Get attack info for new combined attack types
+    const attackInfo = COMBINED_ATTACKS[type];
+    const strength = attackInfo ? attackInfo.strength : type;
+    const placement = attackInfo ? attackInfo.placement : null;
 
-    const hitboxRect = attackerAvatar.querySelector('.hitbox').getBoundingClientRect();
-    const hurtboxRect = defenderAvatar.querySelector('.hurtbox').getBoundingClientRect();
-
-    if (!wasActive) {
-        attackerAvatar.classList.remove('attacking-light-active');
+    // Check if both players are attacking and handle counter system
+    const attackerAction = playerNum === 1 ? frameActionP1 : frameActionP2;
+    const defenderAction = playerNum === 1 ? frameActionP2 : frameActionP1;
+    
+    let isCounterHit = false;
+    let counterMessage = '';
+    
+    if (defenderAction && defenderAction.type && placement) {
+        const defenderAttackInfo = COMBINED_ATTACKS[defenderAction.type];
+        if (defenderAttackInfo && defenderAttackInfo.placement) {
+            // Check for counter relationships
+            if (getAttackCounterRelationship(placement, defenderAttackInfo.placement)) {
+                isCounterHit = true;
+                counterMessage = `Counter hit! ${placement} beats ${defenderAttackInfo.placement}. `;
+            }
+        }
     }
 
-    const isHit = !(
-        hitboxRect.right <= hurtboxRect.left ||
-        hitboxRect.left >= hurtboxRect.right ||
-        hitboxRect.bottom <= hurtboxRect.top ||
-        hitboxRect.top >= hurtboxRect.bottom
-    );
+    // Hit detection
+    const isHit = checkHit(attacker, defender, type, silent);
 
     if (!silent) {
         attackerAvatar.classList.add('attacking');
         setTimeout(function () { attackerAvatar.classList.remove('attacking'); }, 300);
     }
 
-    const defenderAction = playerNum === 1 ? frameActionP2 : frameActionP1;
     const isParrying = defenderAction && defenderAction.type === 'parry';
 
     if (isHit) {
         if (isParrying) {
             if (!silent) elements.optionsHint.textContent = 'Parried! 0 damage.';
         } else {
-            const amount = damage[type];
+            // Apply damage immediately
+            const amount = attackInfo ? attackInfo.damage : damage[strength];
             defender.health = Math.max(0, defender.health - amount);
+            
+            // Calculate disadvantage frames based on strength
+            const disadvantageData = DISADVANTAGE_FRAMES[strength];
+            let disadvantageFrames = disadvantageData.base;
+            
+            // Check if defender was in recovery frames
+            if (defenderAction && defenderAction.type !== 'parry') {
+                const fd = FRAME_DATA[defenderAction.type] || FRAME_DATA.move;
+                const totalFrames = fd.startup + fd.active + fd.recovery;
+                const currentFrame = defenderAction.currentFrame || 0;
+                
+                if (currentFrame >= fd.startup + fd.active && currentFrame < totalFrames) {
+                    // Defender is in recovery frames
+                    disadvantageFrames += disadvantageData.recoveryBonus;
+                }
+            }
+            
+            // Apply disadvantage to defender
+            disadvantageState = {
+                player: playerNum === 1 ? 2 : 1, // The defender gets disadvantage
+                blockedFrames: disadvantageFrames
+            };
+            
             if (!silent) {
-                elements.optionsHint.textContent = 'Hit! ' + amount + ' damage.';
-                startSubGame(playerNum, defender === state.p1 ? 1 : 2);
+                const message = counterMessage + `Hit! ${amount} damage. P${disadvantageState.player} has ${disadvantageFrames} frames disadvantage!`;
+                elements.optionsHint.textContent = message;
+                
+                // Stop current execution and reset for disadvantage mode
+                if (planTimerId) {
+                    clearInterval(planTimerId);
+                    planTimerId = null;
+                }
+                // Clear plans and reset for new round with disadvantage
+                clearPlan();
+                restoreBaseState();
+                updateUI();
+                if (typeof updateDisadvantageUI === 'function') {
+                    updateDisadvantageUI();
+                }
             }
         }
     } else {
@@ -354,18 +395,7 @@ function handleInput(directionOrAttack) {
     const current = state.turn === 1 ? state.p1 : state.p2;
     const onFloor = isOnFloor(current);
 
-    if (directionOrAttack === 'up') {
-        if (onFloor && current.row > 0) {
-            move(current, -1, 0);
-            startFrameAction(state.turn, 'move');
-            elements.optionsHint.textContent = 'Jumped!';
-            endTurn();
-        } else if (!onFloor) {
-            elements.optionsHint.textContent = "Already in the air.";
-        } else {
-            elements.optionsHint.textContent = "Can't jump higher.";
-        }
-    } else if (directionOrAttack === 'down') {
+if (directionOrAttack === 'down') {
         if (!onFloor) {
             current.row = FLOOR_ROW;
             startFrameAction(state.turn, 'move');

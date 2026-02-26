@@ -148,23 +148,17 @@ function buildPlanBar(playerNum) {
     const filled = getPlanFilledSlots(planArray);
     
     // Check if this player has disadvantage restrictions
-    const isAttackerInDisadvantage = disadvantageState && disadvantageState.attacker === playerNum;
-    const isDefenderInDisadvantage = disadvantageState && disadvantageState.defender === playerNum;
+    const hasDisadvantage = disadvantageState && disadvantageState.player === playerNum;
+    const blockedFrameCount = hasDisadvantage ? disadvantageState.blockedFrames : 0;
     
     for (let i = 0; i < slotCount; i++) {
         const slot = document.createElement('div');
         slot.className = 'frame-slot';
         slot.dataset.frameIndex = i;
         
-        // Apply disadvantage restrictions
-        if (disadvantageState) {
-            if (isAttackerInDisadvantage && i < 10) {
-                // First 10 frames are grayed out for attacker
-                slot.classList.add('disadvantage-disabled');
-            } else if (isDefenderInDisadvantage && i >= 10) {
-                // Only last 20 frames (frames 10-29) are available for defender
-                slot.classList.add('disadvantage-disabled');
-            }
+        // Apply disadvantage restrictions - block first N frames
+        if (hasDisadvantage && i < blockedFrameCount) {
+            slot.classList.add('disadvantage-disabled');
         }
         
         const info = filled[i];
@@ -268,25 +262,15 @@ function bindPlanBar() {
             const total = getTotalFrames(actionType);
 
             // Check disadvantage restrictions
-            if (disadvantageState) {
-                const isAttackerInDisadvantage = disadvantageState.attacker === playerNum;
-                const isDefenderInDisadvantage = disadvantageState.defender === playerNum;
-                
-                if (isAttackerInDisadvantage && index < 10) {
-                    // Attacker cannot place actions in first 10 frames
-                    clearHoverSlots();
-                    const slotEls = wrap.querySelectorAll('.frame-slot');
-                    if (slotEls[index]) slotEls[index].classList.add('hover-invalid');
-                    return;
-                }
-                
-                if (isDefenderInDisadvantage && index >= 10) {
-                    // Defender cannot place actions in frames 10-29 (only last 20 frames)
-                    clearHoverSlots();
-                    const slotEls = wrap.querySelectorAll('.frame-slot');
-                    if (slotEls[index]) slotEls[index].classList.add('hover-invalid');
-                    return;
-                }
+            const hasDisadvantage = disadvantageState && disadvantageState.player === playerNum;
+            const blockedFrameCount = hasDisadvantage ? disadvantageState.blockedFrames : 0;
+            
+            if (hasDisadvantage && index < blockedFrameCount) {
+                // Cannot place actions in blocked frames
+                clearHoverSlots();
+                const slotEls = wrap.querySelectorAll('.frame-slot');
+                if (slotEls[index]) slotEls[index].classList.add('hover-invalid');
+                return;
             }
 
             const start = findEmptyBlock(planArray, total, index);
@@ -301,15 +285,9 @@ function bindPlanBar() {
                 for (let i = 0; i < total; i++) {
                     if (start + i < PLAN_FRAMES && slotEls[start + i]) {
                         // Additional check for disadvantage restrictions on each frame
-                        if (disadvantageState) {
-                            const isAttackerInDisadvantage = disadvantageState.attacker === playerNum;
-                            const isDefenderInDisadvantage = disadvantageState.defender === playerNum;
-                            
-                            if ((isAttackerInDisadvantage && (start + i) < 10) ||
-                                (isDefenderInDisadvantage && (start + i) >= 10)) {
-                                slotEls[start + i].classList.add('hover-invalid');
-                                continue;
-                            }
+                        if (hasDisadvantage && (start + i) < blockedFrameCount) {
+                            slotEls[start + i].classList.add('hover-invalid');
+                            continue;
                         }
                         
                         let phase = 'hover-startup';
@@ -343,31 +321,19 @@ function bindPlanBar() {
             const index = getPlanBarDropIndex(e, wrap);
             
             // Check disadvantage restrictions before adding to plan
-            if (disadvantageState) {
-                const isAttackerInDisadvantage = disadvantageState.attacker === playerNum;
-                const isDefenderInDisadvantage = disadvantageState.defender === playerNum;
-                const total = getTotalFrames(actionType);
-                
-                if (isAttackerInDisadvantage && index < 10) {
-                    elements.optionsHint.textContent = 'Attacker disadvantage: Cannot place actions in first 10 frames!';
-                    return;
-                }
-                
-                if (isDefenderInDisadvantage && index >= 10) {
-                    elements.optionsHint.textContent = 'Defender advantage: Can only place actions in first 10 frames!';
-                    return;
-                }
-                
-                // Check if action would span into restricted frames
-                if (isAttackerInDisadvantage && index + total > 10 && index < 10) {
-                    elements.optionsHint.textContent = 'Attacker disadvantage: Action cannot extend into first 10 frames!';
-                    return;
-                }
-                
-                if (isDefenderInDisadvantage && index < 10 && index + total > 10) {
-                    elements.optionsHint.textContent = 'Defender advantage: Action cannot extend beyond frame 10!';
-                    return;
-                }
+            const hasDisadvantage = disadvantageState && disadvantageState.player === playerNum;
+            const blockedFrameCount = hasDisadvantage ? disadvantageState.blockedFrames : 0;
+            const total = getTotalFrames(actionType);
+            
+            if (hasDisadvantage && index < blockedFrameCount) {
+                elements.optionsHint.textContent = `Disadvantage: Cannot place actions in first ${blockedFrameCount} frames!`;
+                return;
+            }
+            
+            // Check if action would span into restricted frames
+            if (hasDisadvantage && index < blockedFrameCount && index + total > blockedFrameCount) {
+                elements.optionsHint.textContent = `Disadvantage: Action cannot extend into blocked frames!`;
+                return;
             }
 
             if (addToPlan(playerNum, actionType, index)) {
@@ -515,6 +481,65 @@ function updateDisadvantageUI() {
     
     // Update options hint to show disadvantage status
     if (disadvantageState) {
-        elements.optionsHint.textContent = `P${disadvantageState.attacker} has disadvantage! First 10 frames blocked. P${disadvantageState.defender} can only use first 10 frames.`;
+        elements.optionsHint.textContent = `P${disadvantageState.player} has disadvantage! First ${disadvantageState.blockedFrames} frames blocked.`;
     }
+}
+
+// Two-tier attack system - simplified for 3x3 grid
+function initializeAttackSelection() {
+    // Generate all 9 combined attack buttons directly
+    updateAttackButtons();
+}
+
+function updateAttackButtons() {
+    const attackButtonsContainer = document.getElementById('attack-buttons');
+    attackButtonsContainer.innerHTML = '';
+    
+    // Generate all 9 combined attack buttons in 3x3 grid
+    const attackOrder = [
+        'light_overhead', 'light_high', 'light_low',
+        'medium_overhead', 'medium_high', 'medium_low', 
+        'heavy_overhead', 'heavy_high', 'heavy_low'
+    ];
+    
+    attackOrder.forEach(attackType => {
+        const frameData = FRAME_DATA[attackType];
+        const totalFrames = frameData.startup + frameData.active + frameData.recovery;
+        
+        const button = document.createElement('button');
+        button.className = `attack-btn ${attackType.split('_')[0]} draggable`;
+        button.draggable = true;
+        button.dataset.action = attackType;
+        
+        // Format button text: "Light Overhead (10f)"
+        const [strength, placement] = attackType.split('_');
+        const formattedStrength = strength.charAt(0).toUpperCase() + strength.slice(1);
+        const formattedPlacement = placement.charAt(0).toUpperCase() + placement.slice(1);
+        button.textContent = `${formattedStrength} ${formattedPlacement} (${totalFrames}f)`;
+        
+        attackButtonsContainer.appendChild(button);
+    });
+    
+    // Re-setup drag and drop for the new buttons
+    attackButtonsContainer.querySelectorAll('.draggable').forEach(function (btn) {
+        btn.addEventListener('dragstart', function (e) {
+            const action = e.target.dataset.action;
+            if (action) {
+                e.dataTransfer.setData('text/plain', action);
+                window.__draggedAction = action;
+                e.dataTransfer.effectAllowed = 'copy';
+                e.target.classList.add('dragging');
+            }
+        });
+        btn.addEventListener('dragend', function (e) {
+            e.target.classList.remove('dragging');
+            window.__draggedAction = null;
+            clearHoverSlots();
+        });
+    });
+}
+
+function getAttackCounterRelationship(attackerPlacement, defenderPlacement) {
+    // Check if attacker's placement beats defender's placement
+    return PLACEMENT_COUNTERS[attackerPlacement]?.includes(defenderPlacement) || false;
 }

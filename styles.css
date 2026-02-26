@@ -505,18 +505,113 @@ body {
   background: #3b82f6;
 }
 
-.frame-slot.filled.left,
-.frame-slot.filled.right,
-.frame-slot.filled.down {
-  background: #a78bfa;
+.frame-slot.filled.light_overhead,
+.frame-slot.filled.light_high,
+.frame-slot.filled.light_low {
+  background: #6ee7b7;
 }
 
-.frame-slot.filled.jump {
+.frame-slot.filled.light_overhead.startup,
+.frame-slot.filled.light_high.startup,
+.frame-slot.filled.light_low.startup {
+  background: #94a3b8;
+}
+
+.frame-slot.filled.light_overhead.active,
+.frame-slot.filled.light_high.active,
+.frame-slot.filled.light_low.active {
+  background: #22c55e;
+}
+
+.frame-slot.filled.light_overhead.recovery,
+.frame-slot.filled.light_high.recovery,
+.frame-slot.filled.light_low.recovery {
+  background: #3b82f6;
+}
+
+.frame-slot.filled.medium {
   background: #fbbf24;
 }
 
-.frame-slot.filled.jump.active {
-  background: #f59e0b;
+.frame-slot.filled.medium.startup {
+  background: #94a3b8;
+}
+
+.frame-slot.filled.medium.active {
+  background: #22c55e;
+}
+
+.frame-slot.filled.medium.recovery {
+  background: #3b82f6;
+}
+
+.frame-slot.filled.medium_overhead,
+.frame-slot.filled.medium_high,
+.frame-slot.filled.medium_low {
+  background: #fbbf24;
+}
+
+.frame-slot.filled.medium_overhead.startup,
+.frame-slot.filled.medium_high.startup,
+.frame-slot.filled.medium_low.startup {
+  background: #94a3b8;
+}
+
+.frame-slot.filled.medium_overhead.active,
+.frame-slot.filled.medium_high.active,
+.frame-slot.filled.medium_low.active {
+  background: #22c55e;
+}
+
+.frame-slot.filled.medium_overhead.recovery,
+.frame-slot.filled.medium_high.recovery,
+.frame-slot.filled.medium_low.recovery {
+  background: #3b82f6;
+}
+
+.frame-slot.filled.heavy {
+  background: #f87171;
+}
+
+.frame-slot.filled.heavy.startup {
+  background: #94a3b8;
+}
+
+.frame-slot.filled.heavy.active {
+  background: #22c55e;
+}
+
+.frame-slot.filled.heavy.recovery {
+  background: #3b82f6;
+}
+
+.frame-slot.filled.heavy_overhead,
+.frame-slot.filled.heavy_high,
+.frame-slot.filled.heavy_low {
+  background: #f87171;
+}
+
+.frame-slot.filled.heavy_overhead.startup,
+.frame-slot.filled.heavy_high.startup,
+.frame-slot.filled.heavy_low.startup {
+  background: #94a3b8;
+}
+
+.frame-slot.filled.heavy_overhead.active,
+.frame-slot.filled.heavy_high.active,
+.frame-slot.filled.heavy_low.active {
+  background: #22c55e;
+}
+
+.frame-slot.filled.heavy_overhead.recovery,
+.frame-slot.filled.heavy_high.recovery,
+.frame-slot.filled.heavy_low.recovery {
+  background: #3b82f6;
+}
+
+.frame-slot.filled.left,
+.frame-slot.filled.right {
+  background: #a78bfa;
 }
 
 .frame-slot.filled.parry {
@@ -649,24 +744,42 @@ body {
 
 .attacks-drag {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 2rem;
   flex-wrap: wrap;
   flex: 1;
+}
+
+.movement-section,
+.attack-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 200px;
 }
 
 .drag-label {
   font-size: 0.8rem;
   color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+
+.sub-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-bottom: 0.25rem;
 }
 
 .attacks-drag .attack-btn.draggable,
-.attacks-drag .dir-btn.draggable {
+.attacks-drag .dir-btn.draggable,
+.attacks-drag .dash-btn.draggable {
   cursor: grab;
 }
 
 .attacks-drag .attack-btn.draggable:active,
-.attacks-drag .dir-btn.draggable:active {
+.attacks-drag .dir-btn.draggable:active,
+.attacks-drag .dash-btn.draggable:active {
   cursor: grabbing;
 }
 
@@ -712,10 +825,6 @@ body {
 
 .dir-btn.dir-up {
   color: #fbbf24;
-}
-
-.dir-btn.dir-down {
-  color: #a78bfa;
 }
 
 .dir-btn.dir-left,
@@ -943,60 +1052,16 @@ body {
   font-size: 0.9rem;
 }
 
-.subgame-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.subgame-btn {
-  background: var(--slice-bg);
-  color: var(--text);
-  border: 2px solid var(--slice-border);
-  border-radius: 4px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.subgame-btn:hover:not(:disabled) {
-  background: var(--panel-border);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.subgame-btn.selected {
-  background: rgba(255, 51, 102, 0.2);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.subgame-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.subgame-playe.drag-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
 }
 
 .subgame-status {
   font-size: 0.85rem;
   color: var(--text-dim);
   min-height: 1.2em;
-}
-
-/* Subgame button specific styles */
-.subgame-btn.light {
-  background: linear-gradient(135deg, #4CAF50, #45a049);
-  border-color: #4CAF50;
-  color: white;
-}
-
-.subgame-btn.light:hover:not(:disabled) {
-  background: linear-gradient(135deg, #45a049, #3d8b40);
-  border-color: #45a049;
 }
 
 .subgame-btn.medium {
@@ -1020,3 +1085,27 @@ body {
   background: linear-gradient(135deg, #d32f2f, #b71c1c);
   border-color: #d32f2f;
 }
+
+/* Attack buttons grid layout */
+.attack-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, auto);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Row 1: Light attacks */
+.attack-buttons .light_overhead { grid-column: 1; grid-row: 1; }
+.attack-buttons .light_high { grid-column: 2; grid-row: 1; }
+.attack-buttons .light_low { grid-column: 3; grid-row: 1; }
+
+/* Row 2: Medium attacks */
+.attack-buttons .medium_overhead { grid-column: 1; grid-row: 2; }
+.attack-buttons .medium_high { grid-column: 2; grid-row: 2; }
+.attack-buttons .medium_low { grid-column: 3; grid-row: 2; }
+
+/* Row 3: Heavy attacks */
+.attack-buttons .heavy_overhead { grid-column: 1; grid-row: 3; }
+.attack-buttons .heavy_high { grid-column: 2; grid-row: 3; }
+.attack-buttons .heavy_low { grid-column: 3; grid-row: 3; }

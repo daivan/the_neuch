@@ -15,7 +15,7 @@
 
   const damage = { light: 8, medium: 15, heavy: 25 };
 
-  /** Frame data: startup, active, recovery per action. Directions: 1f each; jump = 5 active frames. */
+  /** Frame data: startup, active, recovery per action. Directions: 1f each. */
   const FRAME_DATA = {
     light: { startup: 6, active: 2, recovery: 8 },
     medium: { startup: 10, active: 5, recovery: 18 },
@@ -24,7 +24,6 @@
     left: { startup: 1, active: 0, recovery: 0 },
     right: { startup: 1, active: 0, recovery: 0 },
     down: { startup: 1, active: 0, recovery: 0 },
-    jump: { startup: 0, active: 5, recovery: 0 }
   };
 
   const PLAN_FRAMES = 30;
@@ -324,7 +323,7 @@
         if (['light', 'medium', 'heavy'].includes(info.type) && info.phase === 'active' && localFrame === fd.startup) {
           doAttack(info.type, playerNum, silent);
         }
-        if (['left', 'right', 'down', 'jump'].includes(info.type)) {
+        if (['left', 'right', 'down'].includes(info.type)) {
           applyMovement(info.type, localFrame, playerNum);
         }
       }
@@ -411,7 +410,6 @@
     planCurrentFrame++;
   }
 
-  /** Move by one sub-step (1/5 of a cell). Used for left/right 1 frame and jump (1 step up per frame). */
   function moveStep(p, dStepX, dStepY) {
     if (dStepX !== 0) {
       let sx = (p.stepX || 0) + dStepX;
@@ -451,10 +449,6 @@
         p.row = FLOOR_ROW;
         p.stepY = 0;
       }
-    } else if (type === 'jump') {
-      if (localFrame === 0 && isOnFloor(p) && p.row > 0) moveStep(p, 0, -1);
-      else if (localFrame >= 1 && localFrame <= 4) moveStep(p, 0, -1);
-      if (localFrame === 4) { p.row = FLOOR_ROW; p.stepY = 0; }
     }
   }
 
@@ -666,18 +660,7 @@
     const current = state.turn === 1 ? state.p1 : state.p2;
     const onFloor = isOnFloor(current);
 
-    if (directionOrAttack === 'up') {
-      if (onFloor && current.row > 0) {
-        move(current, -1, 0);
-        startFrameAction(state.turn, 'move');
-        elements.optionsHint.textContent = 'Jumped!';
-        endTurn();
-      } else if (!onFloor) {
-        elements.optionsHint.textContent = "Already in the air.";
-      } else {
-        elements.optionsHint.textContent = "Can't jump higher.";
-      }
-    } else if (directionOrAttack === 'down') {
+if (directionOrAttack === 'down') {
       if (!onFloor) {
         current.row = FLOOR_ROW;
         startFrameAction(state.turn, 'move');

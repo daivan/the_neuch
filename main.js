@@ -9,13 +9,10 @@ function init() {
     elements.p2HealthText = document.getElementById('p2-health-text');
     elements.turnIndicator = document.getElementById('turn-indicator');
     elements.optionsHint = document.getElementById('options-hint');
-    elements.btnLight = document.getElementById('btn-light');
-    elements.btnParry = document.getElementById('btn-parry');
-    elements.btnMedium = document.getElementById('btn-medium');
-    elements.btnHeavy = document.getElementById('btn-heavy');
     elements.btnGo = document.getElementById('btn-go');
     elements.btnPractice = document.getElementById('btn-practice');
     elements.btnCampaign = document.getElementById('btn-campaign');
+    elements.btnParry = document.getElementById('btn-parry');
     elements.startScreen = document.getElementById('start-screen');
     elements.gameContainer = document.getElementById('game-container');
     elements.framePlanBarP1 = document.getElementById('frame-plan-bar-p1');
@@ -43,7 +40,13 @@ function init() {
     saveBaseState();
     buildGrid();
     bindPlanBar();
-    elements.optionsHint.textContent = 'Drag Light (16 frames) to the bar above. Fill up to 30 frames, then press Go.';
+    
+    // Initialize the new attack selection system
+    if (typeof initializeAttackSelection === 'function') {
+        initializeAttackSelection();
+    }
+    
+    elements.optionsHint.textContent = 'Select attack strength and placement, then drag to bar above. Fill up to 30 frames, then press Go.';
     updateUI();
 
     elements.btnPractice.addEventListener('click', function () {

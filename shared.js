@@ -11,21 +11,67 @@ const state = {
     gameMode: 'practice' // 'practice' or 'campaign'
 };
 
-const damage = { light: 8, medium: 15, heavy: 25 };
+const damage = { 
+    light: 8, 
+    medium: 15, 
+    heavy: 25 
+};
 
-/** Frame data: startup, active, recovery per action. Directions: 1f each; jump = 5 active frames. */
+// Attack placement counter system
+const ATTACK_PLACEMENTS = ['overhead', 'high', 'low'];
+const ATTACK_STRENGTHS = ['light', 'medium', 'heavy'];
+
+// Counter relationships: placement beats [beaten placements]
+const PLACEMENT_COUNTERS = {
+    'overhead': ['low'],    // Overhead beats low (short hop)
+    'high': ['overhead'],   // High beats overhead (kick high)
+    'low': ['high']        // Low beats high (duck while hitting)
+};
+
+// Combined attack types for frame data
+const COMBINED_ATTACKS = {};
+ATTACK_STRENGTHS.forEach(strength => {
+    ATTACK_PLACEMENTS.forEach(placement => {
+        const attackType = `${strength}_${placement}`;
+        COMBINED_ATTACKS[attackType] = {
+            strength,
+            placement,
+            damage: damage[strength]
+        };
+    });
+});
+
+// Disadvantage frames based on attack strength and recovery state
+const DISADVANTAGE_FRAMES = {
+    light: { base: 2, recoveryBonus: 5 },
+    medium: { base: 4, recoveryBonus: 8 },
+    heavy: { base: 6, recoveryBonus: 12 }
+};
+
+/** Frame data: startup, active, recovery per action. Directions: 1f each. */
 const FRAME_DATA = {
-    light: { startup: 6, active: 2, recovery: 8 },
-    medium: { startup: 10, active: 5, recovery: 18 },
-    heavy: { startup: 15, active: 5, recovery: 28 },
-    move: { startup: 0, active: 0, recovery: 8 },
-    left: { startup: 1, active: 0, recovery: 0 },
-    right: { startup: 1, active: 0, recovery: 0 },
-    down: { startup: 1, active: 0, recovery: 0 },
-    jump: { startup: 0, active: 5, recovery: 0 },
-    parry: { startup: 2, active: 5, recovery: 8 },
-    forward_dash: { startup: 0, active: 5, recovery: 0 },
-    backward_dash: { startup: 0, active: 5, recovery: 0 }
+    // Movement
+    move: { startup: 0, active: 1, recovery: 0, hitboxRange: 0 },
+    left: { startup: 0, active: 1, recovery: 0, hitboxRange: 0 },
+    right: { startup: 0, active: 1, recovery: 0, hitboxRange: 0 },
+    forward_dash: { startup: 0, active: 5, recovery: 0, hitboxRange: 0 },
+    backward_dash: { startup: 0, active: 5, recovery: 0, hitboxRange: 0 },
+    parry: { startup: 0, active: 15, recovery: 0, hitboxRange: 0 },
+    
+    // Light Attacks (10 total frames: 4/2/4)
+    light_overhead: { startup: 4, active: 2, recovery: 4, hitboxRange: 1 },
+    light_high: { startup: 4, active: 2, recovery: 4, hitboxRange: 1 },
+    light_low: { startup: 4, active: 2, recovery: 4, hitboxRange: 1 },
+    
+    // Medium Attacks (16 total frames: 7/3/6)
+    medium_overhead: { startup: 7, active: 3, recovery: 6, hitboxRange: 2 },
+    medium_high: { startup: 7, active: 3, recovery: 6, hitboxRange: 2 },
+    medium_low: { startup: 7, active: 3, recovery: 6, hitboxRange: 2 },
+    
+    // Heavy Attacks (22 total frames: 10/4/8)
+    heavy_overhead: { startup: 10, active: 4, recovery: 8, hitboxRange: 3 },
+    heavy_high: { startup: 10, active: 4, recovery: 8, hitboxRange: 3 },
+    heavy_low: { startup: 10, active: 4, recovery: 8, hitboxRange: 3 }
 };
 
 const PLAN_FRAMES = 30;
@@ -63,7 +109,7 @@ const COUNTER_MATRIX = {
 };
 
 let baseState = null;
-let disadvantageState = null; // { attacker: playerNum, defender: playerNum }
+let disadvantageState = null; // { player: playerNum, blockedFrames: number }
 
 function saveBaseState() {
     baseState = JSON.parse(JSON.stringify(state));

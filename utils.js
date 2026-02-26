@@ -84,7 +84,7 @@ function move(current, dRow, dCol) {
     return true;
 }
 
-/** Move by one sub-step (1/5 of a cell). Used for left/right 1 frame and jump (1 step up per frame). */
+/** Move by one sub-step (1/5 of a cell). Used for left/right 1 frame. */
 function moveStep(p, dStepX, dStepY) {
     if (dStepX !== 0) {
         let sx = (p.stepX || 0) + dStepX;
