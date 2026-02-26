@@ -146,10 +146,27 @@ function buildPlanBar(playerNum) {
     barEl.innerHTML = '';
     const slotCount = PLAN_FRAMES;
     const filled = getPlanFilledSlots(planArray);
+    
+    // Check if this player has disadvantage restrictions
+    const isAttackerInDisadvantage = disadvantageState && disadvantageState.attacker === playerNum;
+    const isDefenderInDisadvantage = disadvantageState && disadvantageState.defender === playerNum;
+    
     for (let i = 0; i < slotCount; i++) {
         const slot = document.createElement('div');
         slot.className = 'frame-slot';
         slot.dataset.frameIndex = i;
+        
+        // Apply disadvantage restrictions
+        if (disadvantageState) {
+            if (isAttackerInDisadvantage && i < 10) {
+                // First 10 frames are grayed out for attacker
+                slot.classList.add('disadvantage-disabled');
+            } else if (isDefenderInDisadvantage && i >= 10) {
+                // Only last 20 frames (frames 10-29) are available for defender
+                slot.classList.add('disadvantage-disabled');
+            }
+        }
+        
         const info = filled[i];
         if (info) {
             slot.classList.add('filled', info.type);
@@ -250,6 +267,28 @@ function bindPlanBar() {
             const planArray = playerNum === 1 ? planP1 : planP2;
             const total = getTotalFrames(actionType);
 
+            // Check disadvantage restrictions
+            if (disadvantageState) {
+                const isAttackerInDisadvantage = disadvantageState.attacker === playerNum;
+                const isDefenderInDisadvantage = disadvantageState.defender === playerNum;
+                
+                if (isAttackerInDisadvantage && index < 10) {
+                    // Attacker cannot place actions in first 10 frames
+                    clearHoverSlots();
+                    const slotEls = wrap.querySelectorAll('.frame-slot');
+                    if (slotEls[index]) slotEls[index].classList.add('hover-invalid');
+                    return;
+                }
+                
+                if (isDefenderInDisadvantage && index >= 10) {
+                    // Defender cannot place actions in frames 10-29 (only last 20 frames)
+                    clearHoverSlots();
+                    const slotEls = wrap.querySelectorAll('.frame-slot');
+                    if (slotEls[index]) slotEls[index].classList.add('hover-invalid');
+                    return;
+                }
+            }
+
             const start = findEmptyBlock(planArray, total, index);
 
             clearHoverSlots();
@@ -261,6 +300,18 @@ function bindPlanBar() {
                 const a = fd.active || 0;
                 for (let i = 0; i < total; i++) {
                     if (start + i < PLAN_FRAMES && slotEls[start + i]) {
+                        // Additional check for disadvantage restrictions on each frame
+                        if (disadvantageState) {
+                            const isAttackerInDisadvantage = disadvantageState.attacker === playerNum;
+                            const isDefenderInDisadvantage = disadvantageState.defender === playerNum;
+                            
+                            if ((isAttackerInDisadvantage && (start + i) < 10) ||
+                                (isDefenderInDisadvantage && (start + i) >= 10)) {
+                                slotEls[start + i].classList.add('hover-invalid');
+                                continue;
+                            }
+                        }
+                        
                         let phase = 'hover-startup';
                         if (i >= s + a) phase = 'hover-recovery';
                         else if (i >= s) phase = 'hover-active';
@@ -290,6 +341,35 @@ function bindPlanBar() {
             }
 
             const index = getPlanBarDropIndex(e, wrap);
+            
+            // Check disadvantage restrictions before adding to plan
+            if (disadvantageState) {
+                const isAttackerInDisadvantage = disadvantageState.attacker === playerNum;
+                const isDefenderInDisadvantage = disadvantageState.defender === playerNum;
+                const total = getTotalFrames(actionType);
+                
+                if (isAttackerInDisadvantage && index < 10) {
+                    elements.optionsHint.textContent = 'Attacker disadvantage: Cannot place actions in first 10 frames!';
+                    return;
+                }
+                
+                if (isDefenderInDisadvantage && index >= 10) {
+                    elements.optionsHint.textContent = 'Defender advantage: Can only place actions in first 10 frames!';
+                    return;
+                }
+                
+                // Check if action would span into restricted frames
+                if (isAttackerInDisadvantage && index + total > 10 && index < 10) {
+                    elements.optionsHint.textContent = 'Attacker disadvantage: Action cannot extend into first 10 frames!';
+                    return;
+                }
+                
+                if (isDefenderInDisadvantage && index < 10 && index + total > 10) {
+                    elements.optionsHint.textContent = 'Defender advantage: Action cannot extend beyond frame 10!';
+                    return;
+                }
+            }
+
             if (addToPlan(playerNum, actionType, index)) {
                 elements.optionsHint.textContent = 'Added ' + actionType + ' to P' + playerNum + ' plan. Add more or press Go.';
 
@@ -425,5 +505,16 @@ function updateSubGameUI() {
         setTimeout(() => {
             if (subgameState) selectSubGameAction(2, aiAction, null);
         }, 800);
+    }
+}
+
+function updateDisadvantageUI() {
+    // Refresh plan bars to show disadvantage restrictions
+    buildPlanBar(1);
+    buildPlanBar(2);
+    
+    // Update options hint to show disadvantage status
+    if (disadvantageState) {
+        elements.optionsHint.textContent = `P${disadvantageState.attacker} has disadvantage! First 10 frames blocked. P${disadvantageState.defender} can only use first 10 frames.`;
     }
 }

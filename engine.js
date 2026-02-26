@@ -228,6 +228,9 @@ function startPlanExecution() {
     console.log('startPlanExecution called, gameMode:', state.gameMode);
     console.log('planP1.length:', planP1.length, 'planP2.length:', planP2.length);
     
+    // Clear disadvantage state when starting a new round
+    disadvantageState = null;
+    
     // Debug: Check if gameMode was somehow reset
     if (state.gameMode === 'practice') {
         console.warn('WARNING: gameMode is practice, but AI generation expected campaign mode!');
@@ -266,6 +269,11 @@ function startPlanExecution() {
     elements.btnGo.disabled = true;
     elements.optionsHint.textContent = 'Executing plan…';
     planTimerId = setInterval(planExecutionTick, FRAME_MS);
+    
+    // Update UI to clear disadvantage display
+    if (typeof updateDisadvantageUI === 'function') {
+        updateDisadvantageUI();
+    }
 }
 
 function isExecuting() {
@@ -409,7 +417,8 @@ function startSubGame(attackerNum, defenderNum) {
         stage: 1, // 1 = first hit, 2 = second hit, 3 = final hit
         p1Action: null,
         p2Action: null,
-        roundWinner: null
+        roundWinner: null,
+        defenderParried: false // Track if defender successfully parried
     };
     if (typeof showSubGameUI === 'function') {
         showSubGameUI(attackerNum, defenderNum);
@@ -427,6 +436,14 @@ function resolveSubGame() {
     // Determine winner using counter system
     let roundWinner = null;
     let message = '';
+    
+    // Check if defender successfully parried in this round
+    const defenderAction = subgameState.defender === 1 ? p1 : p2;
+    const attackerAction = subgameState.attacker === 1 ? p1 : p2;
+    
+    if (defenderAction === 'Parry') {
+        subgameState.defenderParried = true;
+    }
     
     if (p1 === p2) {
         // Same action - attacker wins this round
@@ -474,6 +491,31 @@ function resolveSubGame() {
     if (typeof hideSubGameUI === 'function') {
         hideSubGameUI();
     }
+    
+    // Apply disadvantage if defender successfully parried and won the subgame
+    if (subgameState.defenderParried && roundWinner === subgameState.defender) {
+        disadvantageState = {
+            attacker: subgameState.attacker,
+            defender: subgameState.defender
+        };
+        elements.optionsHint.textContent += ` Defender parried successfully! Attacker has disadvantage!`;
+        
+        // Stop current execution and reset for disadvantage mode
+        if (planTimerId) {
+            clearInterval(planTimerId);
+            planTimerId = null;
+        }
+        // Clear plans and reset for new round with disadvantage
+        clearPlan();
+        restoreBaseState();
+        updateUI();
+        if (typeof updateDisadvantageUI === 'function') {
+            updateDisadvantageUI();
+        }
+        subgameState = null;
+        return;
+    }
+    
     subgameState = null;
 
     if (state.p1.health <= 0 || state.p2.health <= 0) {

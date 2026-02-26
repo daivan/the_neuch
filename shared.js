@@ -63,6 +63,8 @@ const COUNTER_MATRIX = {
 };
 
 let baseState = null;
+let disadvantageState = null; // { attacker: playerNum, defender: playerNum }
+
 function saveBaseState() {
     baseState = JSON.parse(JSON.stringify(state));
 }

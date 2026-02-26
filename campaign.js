@@ -62,7 +62,13 @@ const aiStrategies = {
             // Random AI - generates random actions
             const actions = ['light', 'medium', 'heavy', 'left', 'right', 'jump', 'parry'];
             const plan = [];
+            
+            // Determine starting frame based on disadvantage state
             let currentFrame = 0;
+            if (disadvantageState && disadvantageState.attacker === 2) {
+                // P2 is attacker with disadvantage - start from frame 10
+                currentFrame = 10;
+            }
             
             while (currentFrame < PLAN_FRAMES - 5) {
                 const action = actions[Math.floor(Math.random() * actions.length)];
@@ -70,13 +76,13 @@ const aiStrategies = {
                 
                 console.log(`Trying action: ${action}, totalFrames: ${totalFrames}, currentFrame: ${currentFrame}`);
                 
-                if (currentFrame + totalFrames <= PLAN_FRAMES) {
+                if (canAddActionAt(plan, currentFrame, action)) {
                     plan.push({ type: action, startFrame: currentFrame });
                     console.log(`Added ${action} at frame ${currentFrame}`);
                     currentFrame += totalFrames + Math.floor(Math.random() * 3); // Small random gap
                 } else {
-                    console.log(`Could not add ${action} - would exceed frame limit`);
-                    break;
+                    console.log(`Could not add ${action} - frame not available`);
+                    currentFrame += 1; // Try next frame
                 }
             }
             
@@ -90,20 +96,32 @@ const aiStrategies = {
             const plan = [];
             const p1Filled = getPlanFilledSlots(p1Plan);
             
-            // Find P1's attacks and create counters
-            for (let frame = 0; frame < PLAN_FRAMES; frame++) {
+            // Determine available frame range based on disadvantage
+            let minFrame = 0;
+            let maxFrame = PLAN_FRAMES;
+            
+            if (disadvantageState && disadvantageState.attacker === 2) {
+                // P2 is attacker with disadvantage - can only use frames 10+
+                minFrame = 10;
+            } else if (disadvantageState && disadvantageState.defender === 2) {
+                // P2 is defender with advantage - can only use frames 0-9
+                maxFrame = 10;
+            }
+            
+            // Find P1's attacks and create counters within available frames
+            for (let frame = minFrame; frame < Math.min(maxFrame, PLAN_FRAMES); frame++) {
                 const p1Action = p1Filled[frame];
                 
                 if (p1Action && ['light', 'medium', 'heavy'].includes(p1Action.type)) {
                     // P1 is attacking, try to parry or dodge
                     if (Math.random() < 0.7) { // 70% chance to parry
-                        const parryStart = Math.max(0, frame - 2);
+                        const parryStart = Math.max(minFrame, frame - 2);
                         if (canAddActionAt(plan, parryStart, 'parry')) {
                             plan.push({ type: 'parry', startFrame: parryStart });
                         }
                     } else {
                         // Try to dodge away
-                        const dodgeStart = Math.max(0, frame - 5);
+                        const dodgeStart = Math.max(minFrame, frame - 5);
                         const dodgeAction = state.p2.col > state.p1.col ? 'right' : 'left';
                         if (canAddActionAt(plan, dodgeStart, dodgeAction)) {
                             plan.push({ type: dodgeAction, startFrame: dodgeStart });
@@ -114,8 +132,8 @@ const aiStrategies = {
             
             // Add some random attacks if there's space
             if (plan.length < 3) {
-                const attackFrame = Math.floor(Math.random() * 10) + 5;
-                if (canAddActionAt(plan, attackFrame, 'light')) {
+                const attackFrame = Math.max(minFrame, Math.floor(Math.random() * 5));
+                if (attackFrame < maxFrame && canAddActionAt(plan, attackFrame, 'light')) {
                     plan.push({ type: 'light', startFrame: attackFrame });
                 }
             }
@@ -129,15 +147,34 @@ const aiStrategies = {
             const plan = [];
             const p1Filled = getPlanFilledSlots(p1Plan);
             
-            // Start with an approach
-            if (state.p2.col > state.p1.col + 2) {
-                plan.push({ type: 'left', startFrame: 0 });
-                plan.push({ type: 'left', startFrame: 2 });
-                plan.push({ type: 'left', startFrame: 4 });
+            // Determine available frame range based on disadvantage
+            let minFrame = 0;
+            let maxFrame = PLAN_FRAMES;
+            
+            if (disadvantageState && disadvantageState.attacker === 2) {
+                // P2 is attacker with disadvantage - can only use frames 10+
+                minFrame = 10;
+            } else if (disadvantageState && disadvantageState.defender === 2) {
+                // P2 is defender with advantage - can only use frames 0-9
+                maxFrame = 10;
+            }
+            
+            // Start with an approach if we have frames available
+            if (state.p2.col > state.p1.col + 2 && minFrame < maxFrame) {
+                const approachStart = minFrame;
+                if (canAddActionAt(plan, approachStart, 'left')) {
+                    plan.push({ type: 'left', startFrame: approachStart });
+                    if (canAddActionAt(plan, approachStart + 2, 'left')) {
+                        plan.push({ type: 'left', startFrame: approachStart + 2 });
+                        if (canAddActionAt(plan, approachStart + 4, 'left')) {
+                            plan.push({ type: 'left', startFrame: approachStart + 4 });
+                        }
+                    }
+                }
             }
             
             // Look for openings to attack
-            for (let frame = 0; frame < PLAN_FRAMES - 10; frame++) {
+            for (let frame = minFrame; frame < Math.min(maxFrame, PLAN_FRAMES - 10); frame++) {
                 const p1Action = p1Filled[frame];
                 const distance = manhattanDist(state.p1, state.p2);
                 
@@ -169,6 +206,31 @@ const aiStrategies = {
 function canAddActionAt(plan, startFrame, actionType) {
     const totalFrames = getTotalFrames(actionType);
     if (startFrame + totalFrames > PLAN_FRAMES) return false;
+    
+    // Check disadvantage restrictions for P2 (AI)
+    if (disadvantageState) {
+        const isAttackerInDisadvantage = disadvantageState.attacker === 2; // P2 is attacker
+        const isDefenderInDisadvantage = disadvantageState.defender === 2; // P2 is defender
+        
+        if (isAttackerInDisadvantage && startFrame < 10) {
+            // P2 attacker cannot use first 10 frames
+            return false;
+        }
+        
+        if (isDefenderInDisadvantage && startFrame >= 10) {
+            // P2 defender can only use first 10 frames
+            return false;
+        }
+        
+        // Check if action spans into restricted frames
+        if (isAttackerInDisadvantage && startFrame < 10 && startFrame + totalFrames > 10) {
+            return false;
+        }
+        
+        if (isDefenderInDisadvantage && startFrame < 10 && startFrame + totalFrames > 10) {
+            return false;
+        }
+    }
     
     const filled = getPlanFilledSlots(plan);
     for (let i = 0; i < totalFrames; i++) {
