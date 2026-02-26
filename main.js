@@ -47,7 +47,16 @@ function init() {
     updateUI();
 
     elements.btnPractice.addEventListener('click', function () {
+        console.log('Practice mode clicked');
         state.gameMode = 'practice';
+        console.log('gameMode set to:', state.gameMode);
+        
+        // Restore original UI text for practice mode
+        const frameDataTitle = document.querySelector('.frame-data-title');
+        if (frameDataTitle) {
+            frameDataTitle.textContent = 'Your plan — 30 frames (drag actions here, then Go)';
+        }
+        
         elements.startScreen.style.display = 'none';
         elements.gameContainer.style.display = 'flex';
     });

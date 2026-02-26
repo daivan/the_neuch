@@ -68,6 +68,8 @@ function saveBaseState() {
 }
 function restoreBaseState() {
     if (baseState) {
+        const currentGameMode = state.gameMode; // Preserve current game mode
         Object.assign(state, JSON.parse(JSON.stringify(baseState)));
+        state.gameMode = currentGameMode; // Restore game mode
     }
 }
