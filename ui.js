@@ -77,17 +77,39 @@ function setControllerEnabled(enabled) {
 }
 
 function updateHitboxDisplay() {
-    if (frameActionP1 && frameActionP1.type === 'light' && frameActionP1.currentFrame >= frameActionP1.startup && frameActionP1.currentFrame < frameActionP1.startup + frameActionP1.active) {
-        elements.avatarP1.classList.add('attacking-light-active');
+    console.log('updateHitboxDisplay called from ui.js');
+    console.log('frameActionP1:', frameActionP1, 'frameActionP2:', frameActionP2);
+    
+    // Handle P1 - show hitboxes/hurtboxes for ALL frames of an attack
+    if (frameActionP1 && frameActionP1.currentFrame >= 0 && frameActionP1.currentFrame < frameActionP1.totalFrames) {
+      console.log('P1 is in attack frames');
+      const attackType = getAttackTypeFromAction(frameActionP1);
+      console.log('P1 attackType:', attackType);
+      if (attackType) {
+        elements.avatarP1.classList.add(`attacking-${attackType}-active`);
+        // Pass current frame number (1-indexed)
+        const currentFrame = frameActionP1.currentFrame + 1;
+        applyHitboxStyling(elements.avatarP1, attackType, currentFrame);
+      }
     } else {
-        elements.avatarP1.classList.remove('attacking-light-active');
+      clearHitboxStyling(elements.avatarP1);
     }
-    if (frameActionP2 && frameActionP2.type === 'light' && frameActionP2.currentFrame >= frameActionP2.startup && frameActionP2.currentFrame < frameActionP2.startup + frameActionP2.active) {
-        elements.avatarP2.classList.add('attacking-light-active');
+    
+    // Handle P2 - show hitboxes/hurtboxes for ALL frames of an attack
+    if (frameActionP2 && frameActionP2.currentFrame >= 0 && frameActionP2.currentFrame < frameActionP2.totalFrames) {
+      console.log('P2 is in attack frames');
+      const attackType = getAttackTypeFromAction(frameActionP2);
+      console.log('P2 attackType:', attackType);
+      if (attackType) {
+        elements.avatarP2.classList.add(`attacking-${attackType}-active`);
+        // Pass current frame number (1-indexed)
+        const currentFrame = frameActionP2.currentFrame + 1;
+        applyHitboxStyling(elements.avatarP2, attackType, currentFrame);
+      }
     } else {
-        elements.avatarP2.classList.remove('attacking-light-active');
+      clearHitboxStyling(elements.avatarP2);
     }
-}
+  }
 
 function renderFrameRow(playerNum, action, barEl, cursorEl, labelEl) {
     if (!action) {

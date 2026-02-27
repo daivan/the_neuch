@@ -289,6 +289,14 @@ function doAttack(type, playerNum, silent) {
     const strength = attackInfo ? attackInfo.strength : type;
     const placement = attackInfo ? attackInfo.placement : null;
 
+    // Get the actual attack type for hitbox configuration
+    const attackType = getAttackTypeFromAction({ type });
+    if (!attackType) {
+      // Fallback to simple attack types
+      const fallbackType = type === 'light' ? 'light_high' : type === 'medium' ? 'medium_high' : 'heavy_high';
+      return doAttack(fallbackType, playerNum, silent);
+    }
+
     // Check if both players are attacking and handle counter system
     const attackerAction = playerNum === 1 ? frameActionP1 : frameActionP2;
     const defenderAction = playerNum === 1 ? frameActionP2 : frameActionP1;
@@ -307,8 +315,8 @@ function doAttack(type, playerNum, silent) {
         }
     }
 
-    // Hit detection
-    const isHit = checkHit(attacker, defender, type, silent);
+    // Hit detection with dynamic hitboxes
+    const isHit = checkHit(attacker, defender, attackType, silent);
 
     if (!silent) {
         attackerAvatar.classList.add('attacking');

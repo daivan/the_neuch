@@ -249,15 +249,37 @@
   }
 
   function updateHitboxDisplay() {
-    if (frameActionP1 && frameActionP1.type === 'light' && frameActionP1.currentFrame >= frameActionP1.startup && frameActionP1.currentFrame < frameActionP1.startup + frameActionP1.active) {
-      elements.avatarP1.classList.add('attacking-light-active');
+    console.log('updateHitboxDisplay called');
+    console.log('frameActionP1:', frameActionP1, 'frameActionP2:', frameActionP2);
+    
+    // Handle P1 - show hitboxes/hurtboxes for ALL frames of an attack
+    if (frameActionP1 && frameActionP1.currentFrame >= 0 && frameActionP1.currentFrame < frameActionP1.totalFrames) {
+      console.log('P1 is in attack frames');
+      const attackType = getAttackTypeFromAction(frameActionP1);
+      console.log('P1 attackType:', attackType);
+      if (attackType) {
+        elements.avatarP1.classList.add(`attacking-${attackType}-active`);
+        // Pass current frame number (1-indexed)
+        const currentFrame = frameActionP1.currentFrame + 1;
+        applyHitboxStyling(elements.avatarP1, attackType, currentFrame);
+      }
     } else {
-      elements.avatarP1.classList.remove('attacking-light-active');
+      clearHitboxStyling(elements.avatarP1);
     }
-    if (frameActionP2 && frameActionP2.type === 'light' && frameActionP2.currentFrame >= frameActionP2.startup && frameActionP2.currentFrame < frameActionP2.startup + frameActionP2.active) {
-      elements.avatarP2.classList.add('attacking-light-active');
+    
+    // Handle P2 - show hitboxes/hurtboxes for ALL frames of an attack
+    if (frameActionP2 && frameActionP2.currentFrame >= 0 && frameActionP2.currentFrame < frameActionP2.totalFrames) {
+      console.log('P2 is in attack frames');
+      const attackType = getAttackTypeFromAction(frameActionP2);
+      console.log('P2 attackType:', attackType);
+      if (attackType) {
+        elements.avatarP2.classList.add(`attacking-${attackType}-active`);
+        // Pass current frame number (1-indexed)
+        const currentFrame = frameActionP2.currentFrame + 1;
+        applyHitboxStyling(elements.avatarP2, attackType, currentFrame);
+      }
     } else {
-      elements.avatarP2.classList.remove('attacking-light-active');
+      clearHitboxStyling(elements.avatarP2);
     }
   }
 
@@ -618,15 +640,24 @@
     const attackerAvatar = playerNum === 1 ? elements.avatarP1 : elements.avatarP2;
     const defenderAvatar = playerNum === 1 ? elements.avatarP2 : elements.avatarP1;
 
-    // Temporarily apply active class to show hitbox and get client rects
-    const wasActive = attackerAvatar.classList.contains('attacking-light-active');
-    attackerAvatar.classList.add('attacking-light-active');
+    // Get the actual attack type for hitbox configuration
+    const attackType = getAttackTypeFromAction({ type });
+    if (!attackType) {
+      // Fallback to simple attack types
+      const fallbackType = type === 'light' ? 'light_high' : type === 'medium' ? 'medium_high' : 'heavy_high';
+      return doAttack(fallbackType, playerNum, silent);
+    }
+
+    // Temporarily apply attack-specific styling to show hitbox and get client rects
+    const wasActive = attackerAvatar.classList.contains(`attacking-${attackType}-active`);
+    attackerAvatar.classList.add(`attacking-${attackType}-active`);
+    applyHitboxStyling(attackerAvatar, attackType);
 
     const hitboxRect = attackerAvatar.querySelector('.hitbox').getBoundingClientRect();
     const hurtboxRect = defenderAvatar.querySelector('.hurtbox').getBoundingClientRect();
 
     if (!wasActive) {
-      attackerAvatar.classList.remove('attacking-light-active');
+      attackerAvatar.classList.remove(`attacking-${attackType}-active`);
     }
 
     const isHit = !(
@@ -642,7 +673,7 @@
     }
 
     if (isHit) {
-      const amount = damage[type];
+      const amount = damage[type] || damage[attackType.split('_')[0]];
       defender.health = Math.max(0, defender.health - amount);
       if (!silent) elements.optionsHint.textContent = 'Hit! ' + amount + ' damage.';
     } else {

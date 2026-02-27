@@ -121,3 +121,126 @@ function restoreBaseState() {
         state.gameMode = currentGameMode; // Restore game mode
     }
 }
+
+// Dynamic hitbox styling functions
+function applyHitboxStyling(avatar, attackType, frameNumber) {
+    console.log('applyHitboxStyling called with attackType:', attackType, 'frameNumber:', frameNumber);
+    
+    // Get frame-specific hitbox data
+    const frameData = getFrameHitboxData(attackType, frameNumber);
+    console.log('getFrameHitboxData result:', frameData);
+    
+    if (!frameData) {
+        console.log('No frame data found for attackType:', attackType, 'frame:', frameNumber);
+        return;
+    }
+    
+    const hitbox = avatar.querySelector('.hitbox');
+    const hurtbox = avatar.querySelector('.hurtbox');
+    console.log('hitbox element:', hitbox, 'hurtbox element:', hurtbox);
+    
+    if (!hitbox || !hurtbox) {
+        console.log('Missing hitbox or hurtbox elements');
+        return;
+    }
+    
+    // Apply hitbox dimensions and position (if exists)
+    if (frameData.hitbox) {
+        hitbox.style.width = frameData.hitbox.width + 'px';
+        hitbox.style.height = frameData.hitbox.height + 'px';
+        hitbox.style.left = `calc(50% + ${frameData.hitbox.offsetX}px)`;
+        hitbox.style.top = `calc(50% + ${frameData.hitbox.offsetY}px)`;
+        hitbox.style.display = 'block';
+        console.log('Applied hitbox styling');
+    } else {
+        hitbox.style.display = 'none';
+        console.log('No hitbox for this frame - hiding hitbox');
+    }
+    
+    // Apply hurtbox dimensions and position
+    if (frameData.hurtbox) {
+        hurtbox.style.width = frameData.hurtbox.width + 'px';
+        hurtbox.style.height = frameData.hurtbox.height + 'px';
+        hurtbox.style.left = `calc(50% + ${frameData.hurtbox.offsetX}px)`;
+        hurtbox.style.top = `calc(50% + ${frameData.hurtbox.offsetY}px)`;
+        hurtbox.style.display = 'block';
+        console.log('Applied hurtbox styling');
+    } else {
+        hurtbox.style.display = 'none';
+        console.log('No hurtbox for this frame - hiding hurtbox');
+    }
+    
+    console.log('Final styling - hitbox:', hitbox.style.cssText, 'hurtbox:', hurtbox.style.cssText);
+}
+
+function clearHitboxStyling(avatar) {
+    // Remove all attack-specific classes
+    avatar.className = avatar.className.replace(/attacking-\w+-active/g, '');
+    
+    // Hide hitboxes and hurtboxes
+    const hitbox = avatar.querySelector('.hitbox');
+    const hurtbox = avatar.querySelector('.hurtbox');
+    
+    if (hitbox) {
+        hitbox.style.display = 'none';
+        hitbox.style.width = '';
+        hitbox.style.height = '';
+        hitbox.style.left = '';
+        hitbox.style.top = '';
+    }
+    
+    if (hurtbox) {
+        hurtbox.style.display = 'none';
+        hurtbox.style.width = '';
+        hurtbox.style.height = '';
+        hurtbox.style.left = '';
+        hurtbox.style.top = '';
+    }
+}
+
+function getAttackTypeFromAction(frameAction) {
+    if (!frameAction || !frameAction.type) return null;
+    
+    // Handle combined attack types (e.g., "light_overhead")
+    if (getHitboxConfig(frameAction.type)) {
+        return frameAction.type;
+    }
+    
+    // Handle simple attack types (fallback)
+    if (frameAction.type === 'light') return 'light_high';
+    if (frameAction.type === 'medium') return 'medium_high';
+    if (frameAction.type === 'heavy') return 'heavy_high';
+    
+    return null;
+}
+
+function checkHit(attacker, defender, attackType, silent) {
+    const attackerAvatar = attacker === state.p1 ? elements.avatarP1 : elements.avatarP2;
+    const defenderAvatar = attacker === state.p1 ? elements.avatarP2 : elements.avatarP1;
+    
+    // Get hitbox configuration for this attack type
+    const config = getHitboxConfig(attackType);
+    if (!config) return false;
+    
+    // Temporarily apply attack-specific styling to show hitbox and get client rects
+    const wasActive = attackerAvatar.classList.contains(`attacking-${attackType}-active`);
+    attackerAvatar.classList.add(`attacking-${attackType}-active`);
+    applyHitboxStyling(attackerAvatar, attackType);
+    
+    const hitboxRect = attackerAvatar.querySelector('.hitbox').getBoundingClientRect();
+    const hurtboxRect = defenderAvatar.querySelector('.hurtbox').getBoundingClientRect();
+    
+    if (!wasActive) {
+        attackerAvatar.classList.remove(`attacking-${attackType}-active`);
+    }
+    
+    // Check collision
+    const isHit = !(
+        hitboxRect.right <= hurtboxRect.left ||
+        hitboxRect.left >= hurtboxRect.right ||
+        hitboxRect.bottom <= hurtboxRect.top ||
+        hitboxRect.top >= hurtboxRect.bottom
+    );
+    
+    return isHit;
+}

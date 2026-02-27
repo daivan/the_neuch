@@ -970,31 +970,42 @@ body {
   border: 2px solid #ff9900;
   background: rgba(255, 153, 0, 0.3);
   pointer-events: none;
+  display: none;
 }
 
 .hitbox {
   position: absolute;
   top: 50%;
+  left: 50%;
   width: 30px;
   height: 20px;
   background: rgba(255, 0, 0, 0.5);
   border: 2px solid red;
   pointer-events: none;
   display: none;
+  transform: translate(-50%, -50%);
 }
 
-.avatar-p1 .hitbox {
-  left: 100%;
-  transform: translateY(-50%);
-}
-
-.avatar-p2 .hitbox {
-  right: 100%;
-  transform: translateY(-50%);
-}
-
-.avatar.attacking-light-active .hitbox {
+/* Show hitboxes and hurtboxes when any attack is active */
+[class*="attacking-"][class*="-active"] .hitbox,
+[class*="attacking-"][class*="-active"] .hurtbox {
   display: block;
+}
+
+/* Different colors for different attack strengths */
+[class*="attacking-light-"][class*="-active"] .hitbox {
+  background: rgba(255, 255, 0, 0.5);
+  border-color: #ffff00;
+}
+
+[class*="attacking-medium-"][class*="-active"] .hitbox {
+  background: rgba(255, 128, 0, 0.5);
+  border-color: #ff8000;
+}
+
+[class*="attacking-heavy-"][class*="-active"] .hitbox {
+  background: rgba(255, 0, 0, 0.7);
+  border-color: #ff0000;
 }
 
 /* ----- HIT Sub-Game ----- */
